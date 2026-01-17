@@ -55,18 +55,24 @@ const SoforIlaniEkle = () => {
       }
 
       await addDoc(collection(db, "sofor_ilanlari"), {
-  ...formData,
-  tarih_eklenme: new Date(),
-  ekleyen_id: user.uid,
-  ekleyen_isim: gorunenIsim,
-  ekleyen_foto: gorunenFoto,
-  puan: 4.8,
-  
-  durum: 1 // <--- YENİ SATIR: 1 = Yayında (Aktif)
-});
+        ...formData,
+        // --- KRİTİK GÜNCELLEME BURADA ---
+        // Profil sayfasının okuyabilmesi için standart 'tarih' alanını ekledik:
+        tarih: new Date(), 
+        
+        // Eski sistemin bozulmaması için senin eski alanını da tuttuk:
+        tarih_eklenme: new Date(),
+        
+        ekleyen_id: user.uid,
+        ekleyen_isim: gorunenIsim,
+        ekleyen_foto: gorunenFoto,
+        puan: 4.8,
+        durum: 1 // 1 = Yayında
+      });
       
       alert("İş ilanı başarıyla yayınlandı! 📢");
-      navigate('/surucu-ilanlari');
+      // Yönlendirmeyi senin sistemine uygun olan sayfaya yapıyoruz
+      navigate('/surucu-ilanlari'); 
     } catch (error) {
       console.error("Hata:", error);
       alert("Hata: " + error.message);
@@ -120,14 +126,15 @@ const SoforIlaniEkle = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Gerekli Ehliyet</label>
                 <select name="ehliyet" onChange={handleChange} className="w-full p-3 border rounded focus:border-green-500 outline-none bg-white">
                   <option value="">Seçiniz...</option>
-                  <option value="B Sınıfı">B Sinifi (Kamyonet)</option>
-                  <option value="C Sınıfı">C Sinifi (Kamyon)</option>
-                  <option value="CE Sınıfı">CE Sinifi (Tir)</option>
-                  <option value="D Sınıfı">D Sinifi (Otobus)</option>
+                  <option value="B Sınıfı">B Sınıfı (Kamyonet/Ticari)</option>
+                  <option value="C Sınıfı">C Sınıfı (Kamyon)</option>
+                  <option value="CE Sınıfı">CE Sınıfı (Tır)</option>
+                  <option value="SRC 5 (ADR)">🔥 SRC 5 (Tehlikeli Madde)</option>
+                  <option value="Silobas">🏗️ Silobas Tecrübeli</option>
+                  <option value="D Sınıfı">D Sınıfı (Servis/Otobüs)</option>
                 </select>
              </div>
              <div>
-                {/* --- DÜZELTİLEN KISIM: Tecrübe -> Tecrube --- */}
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tecrube (Yil)</label>
                 <select name="tecrube" onChange={handleChange} className="w-full p-3 border rounded focus:border-green-500 outline-none bg-white">
                   <option value="">Seçiniz...</option>

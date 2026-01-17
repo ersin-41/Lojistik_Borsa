@@ -1,0 +1,22 @@
+{
+  "name": "Lojistik365 | Dijital Lojistik Ağı",
+  "short_name": "Lojistik365",
+  "description": "Türkiye'nin 7/24 Dijital Lojistik ve Nakliye Platformu",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

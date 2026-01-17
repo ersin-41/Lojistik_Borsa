@@ -1,83 +1,100 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
-import SurucuAdayKarti from '../components/SurucuAdayKarti';
-import { Link } from 'react-router-dom';
 
 const SurucuIsArayanlar = () => {
-  const [adaylar, setAdaylar] = useState([]);
-  const [yukleniyor, setYukleniyor] = useState(true);
-  
-  // Sadece Arama Yapmak İçin Filtre State'i
-  const [filtre, setFiltre] = useState({ sehir: '', ehliyet: '' });
+  const [ilanlar, setIlanlar] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [hata, setHata] = useState(null);
+
+  const tarihFormatla = (veri) => {
+    try {
+      if (!veri) return "Yeni İlan";
+      if (veri.seconds) return new Date(veri.seconds * 1000).toLocaleDateString('tr-TR');
+      if (veri instanceof Date) return veri.toLocaleDateString('tr-TR');
+      return "Yeni İlan";
+    } catch (e) { return "Yeni İlan"; }
+  };
 
   useEffect(() => {
-    // Veritabanından verileri çekiyoruz
-    const q = query(collection(db, "surucu_is_arama"), orderBy("tarih_eklenme", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setAdaylar(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      setYukleniyor(false);
-    });
-    return () => unsubscribe();
+    const verileriGetir = async () => {
+      try {
+        const q = collection(db, "surucu_is_arama");
+        const querySnapshot = await getDocs(q);
+        const veriListesi = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+        veriListesi.sort((a, b) => {
+           const tA = a.tarih?.seconds || 0;
+           const tB = b.tarih?.seconds || 0;
+           return tB - tA;
+        });
+        setIlanlar(veriListesi);
+      } catch (err) {
+        setHata("İlanlar yüklenirken hata oluştu.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    verileriGetir();
   }, []);
 
-  // Arama kutusuna yazılanlara göre listeyi daralt
-  const filtrelenmis = adaylar.filter(aday => {
-    // YENİ: İş bulmuş sürücüleri gizle
-    if (aday.durum === 2) return false;
-    return aday.sehir.toLowerCase().includes(filtre.sehir.toLowerCase()) &&
-           (filtre.ehliyet === '' || aday.ehliyet === filtre.ehliyet);
-});
+  if (loading) return <div className="text-center mt-20 font-bold">Yükleniyor...</div>;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      {/* Üst Başlık ve İlan Ekleme Butonu */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">İş Arayan Sürücüler</h1>
-        
-        {/* Bu buton kullanıcıyı FORMA götürür */}
-        <Link to="/surucu-is-arama-ekle" className="bg-red-600 text-white px-4 py-2 rounded font-bold hover:bg-red-700 text-sm flex items-center gap-2">
-          <span>+</span> İş Arıyorum İlanı Ver
-        </Link>
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="text-center mb-10">
+        <h1 className="text-3xl font-bold text-slate-800">İş Arayan Sürücüler</h1>
+        <p className="text-gray-500 mt-2">Tır, Kamyon, Tanker ve Servis sürücüleri.</p>
       </div>
 
-      {/* --- BURASI SADECE ARAMA ALANI (VERİ GİRİŞİ DEĞİL) --- */}
-      <div className="bg-white p-4 rounded shadow-sm mb-6 border border-gray-200">
-         <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Sürücü Ara / Filtrele</h3>
-         <div className="flex gap-3 flex-col md:flex-row">
-            <input 
-              type="text" 
-              placeholder="Şehir ara (Örn: İstanbul)..." 
-              className="flex-1 p-2 border rounded outline-none focus:border-red-500 bg-gray-50"
-              onChange={(e) => setFiltre({...filtre, sehir: e.target.value})}
-            />
-            <select 
-                className="p-2 border rounded outline-none focus:border-red-500 bg-white"
-                onChange={(e) => setFiltre({...filtre, ehliyet: e.target.value})}
-            >
-                <option value="">Tüm Ehliyetler</option>
-                <option value="CE Sınıfı (Tır)">CE Sınıfı (Tır)</option>
-                <option value="C Sınıfı (Kamyon)">C Sınıfı (Kamyon)</option>
-                <option value="B Sınıfı (Kamyonet)">B Sınıfı (Kamyonet)</option>
-            </select>
-         </div>
-      </div>
-      {/* ---------------------------------------------------- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {ilanlar.map((ilan) => {
+          
+          // --- ÖZEL ETİKET KONTROLÜ ---
+          // Eğer ehliyet içinde "SRC 5" veya "Silobas" geçiyorsa rengi Kırmızı yap
+          const ozelBelge = ilan.ehliyet && (ilan.ehliyet.includes('SRC 5') || ilan.ehliyet.includes('Silobas'));
+          
+          return (
+            <div key={ilan.id} className="bg-white rounded-lg shadow-md hover:shadow-xl transition border border-gray-100 overflow-hidden">
+              <div className="bg-slate-50 p-4 border-b border-gray-100 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                   <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center text-slate-900 font-bold">
+                      {ilan.adSoyad ? ilan.adSoyad.charAt(0).toUpperCase() : "S"}
+                   </div>
+                   <div>
+                      <h3 className="font-bold text-slate-800">{ilan.adSoyad}</h3>
+                      <span className="text-xs text-gray-500">Sürücü</span>
+                   </div>
+                </div>
+                <span className="text-xs bg-white border px-2 py-1 rounded text-gray-500">{tarihFormatla(ilan.tarih)}</span>
+              </div>
 
-      {/* LİSTELEME ALANI */}
-      {yukleniyor ? <div className="text-center py-10">Yükleniyor...</div> : (
-        <div className="grid gap-4">
-           {filtrelenmis.map(aday => (
-             <SurucuAdayKarti key={aday.id} {...aday} />
-           ))}
-           
-           {filtrelenmis.length === 0 && (
-             <div className="text-center p-8 bg-gray-50 rounded border border-dashed border-gray-300">
-               <p className="text-gray-500">Aradığınız kriterde sürücü bulunamadı.</p>
-             </div>
-           )}
-        </div>
-      )}
+              <div className="p-4 space-y-3">
+                 <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Belge:</span>
+                    {/* --- DİNAMİK RENKLENDİRME --- */}
+                    <span className={`px-2 py-0.5 rounded font-bold text-xs ${ozelBelge ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-gray-100 text-slate-800'}`}>
+                        {ilan.ehliyet || "-"}
+                    </span>
+                 </div>
+                 <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Tecrübe:</span>
+                    <span className="font-bold text-slate-800">{ilan.tecrube} Yıl</span>
+                 </div>
+                 <p className="text-gray-600 text-sm line-clamp-3 italic bg-yellow-50 p-2 rounded border border-yellow-100">
+                    "{ilan.aciklama}"
+                 </p>
+              </div>
+
+              <div className="p-4 pt-0">
+                 <a href={`tel:${ilan.telefon}`} className="block w-full bg-slate-800 text-white text-center py-2 rounded font-bold hover:bg-slate-700 transition">
+                    📞 Hemen Ara
+                 </a>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };

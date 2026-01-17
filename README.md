@@ -1,16 +1,88 @@
-# React + Vite
+# 🚛 Lojistik365 - Türkiye'nin Dijital Lojistik Ağı
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Firebase](https://img.shields.io/badge/Firebase-039BE5?style=for-the-badge&logo=Firebase&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=white)
+![PWA](https://img.shields.io/badge/PWA-Ready-purple?style=for-the-badge&logo=pwa&logoColor=white)
 
-Currently, two official plugins are available:
+**Lojistik365**, yük sahiplerini, nakliyecileri ve profesyonel sürücüleri (Tır, Kamyon, Tanker, Silobas) tek bir çatı altında toplayan, 7/24 yaşayan modern bir lojistik platformudur.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Proje Hakkında
 
-## React Compiler
+Geleneksel nakliye borsalarından farklı olarak **Lojistik365**, sadece kuru yükü değil; tehlikeli madde (SRC 5), tanker ve silobas taşımacılığı gibi spesifik alanları da kapsar. **PWA (Progressive Web App)** altyapısı sayesinde mobil uygulama gibi çalışır.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+🔗 **Canlı Demo:** [https://lojistikborsa.netlify.app](https://lojistikborsa.netlify.app)
 
-## Expanding the ESLint configuration
+## ✨ Yenilikler ve Öne Çıkan Özellikler
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 📱 Mobil ve Teknoloji
+* **PWA Desteği:** Uygulama mağazasına gerek kalmadan "Ana Ekrana Ekle" diyerek telefona yüklenebilir.
+* **Tam Mobil Uyumluluk:** Her cihazda kusursuz çalışan responsive tasarım.
+* **Scroll-to-Top:** Sayfa geçişlerinde akıcı kullanıcı deneyimi (UX).
+
+### 🚛 Lojistik ve Operasyon
+* **🔥 SRC 5 ve Tanker Desteği:** Tehlikeli madde ve özel yük taşıyan sürücüler için özel filtreleme ve "Kırmızı Etiket" sistemi.
+* **Çoklu İlan Yönetimi:** Yük, Boş Araç, Şoför Arayan ve İş Arayan ilanlarının tek panelden yönetimi.
+* **📊 Gelişmiş Raporlama:** Profil sayfasından ilanların **Excel (XLSX)** formatında raporlanması ve yazdırılması.
+* **Akıllı Filtreleme:** Şehir, araç tipi ve yük tipine göre anlık arama.
+
+### 🏢 Kurumsal Altyapı
+* **Güvenli Kimlik Doğrulama:** Firebase Auth ile güvenli giriş/kayıt.
+* **Veri Güvenliği:** Firestore Security Rules ile veritabanı koruması.
+* **Yasal Sayfalar:** Gizlilik Politikası ve Kullanım Şartları sayfaları entegre edildi.
+
+## 🛠️ Kullanılan Teknolojiler
+
+* **Frontend:** React.js 19, Vite
+* **Styling:** Tailwind CSS
+* **Backend:** Google Firebase (Auth, Firestore)
+* **Routing:** React Router Dom v6
+* **Veri İşleme:** SheetJS (Excel Çıktısı), React-Firebase-Hooks
+* **Deploy:** Netlify (CI/CD)
+
+## 📸 Ekran Görüntüleri
+
+| Ana Sayfa | Sürücü İlanları (SRC 5) | Profil Paneli |
+|-----------|-------------------------|---------------|
+| ![Home](/screenshots/home.png) | ![Drivers](/screenshots/drivers.png) | ![Profile](/screenshots/profile.png) |
+
+## ⚙️ Kurulum (Local'de Çalıştırma)
+
+Projeyi kendi bilgisayarınızda geliştirmek için:
+
+1.  **Projeyi Klonlayın:**
+    ```bash
+    git clone [https://github.com/ersin-41/Lojistik_Borsa.git](https://github.com/ersin-41/Lojistik_Borsa.git)
+    cd Lojistik_Borsa
+    ```
+
+2.  **Bağımlılıkları Yükleyin:**
+    ```bash
+    npm install
+    ```
+    *(Not: Versiyon hatası alırsanız `.npmrc` dosyası otomatik olarak `legacy-peer-deps` ayarını yapacaktır.)*
+
+3.  **Firebase Ayarları:**
+    `src/firebase.js` dosyasına kendi Firebase proje yapılandırma kodlarınızı ekleyin.
+
+4.  **Projeyi Başlatın:**
+    ```bash
+    npm run dev
+    ```
+
+## 🌍 Canlıya Alma (Deployment)
+
+Proje **Netlify** üzerinde barındırılmaktadır.
+* **Build Command:** `npm run build`
+* **Publish Directory:** `dist`
+* **Environment Variables:** `NPM_FLAGS = --legacy-peer-deps` (Netlify ayarlarında tanımlı)
+
+## 🤝 İletişim
+
+Geliştirici: **Ersin Açıkgöz**
+* LinkedIn: [https://www.linkedin.com/in/ersin-a%C3%A7ikg%C3%B6z-91090a221/]
+* E-posta: ersn.ack41@gmail.com
+
+---
+© 2026 Lojistik365 Platformu. Tüm hakları saklıdır.

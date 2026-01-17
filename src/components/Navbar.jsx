@@ -34,8 +34,12 @@ const Navbar = () => {
           
           {/* LOGO */}
           <Link to="/" className="flex items-center gap-2 font-bold text-2xl tracking-wider hover:text-gray-200 transition">
-            <span className="text-3xl">🚛</span>
-            <span>LojistikBorsa</span>
+            <span className="text-2xl font-bold tracking-tight">
+            Lojistik<span className="text-yellow-500">365</span>
+        </span>
+        <span className="text-[10px] text-gray-400 font-medium tracking-widest uppercase">
+            7/24 Lojistik Platformu
+        </span>
           </Link>
 
           {/* MASAÜSTÜ MENÜ (Sadece PC'de görünür) */}
