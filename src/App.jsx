@@ -21,6 +21,8 @@ import Kvkk from './pages/Kvkk';
 import Iletisim from './pages/Iletisim';
 import Gizlilik from './pages/Gizlilik';
 import KullanimSartlari from './pages/KullanimSartlari';
+import KayitOl from './pages/KayitOl'
+import SifremiUnuttum from './pages/SifremiUnuttum';
 
 
 function App() {
@@ -39,6 +41,8 @@ function App() {
             <Route path="/ilan-ekle" element={<IlanEkle />} />
             <Route path="/ilan/:id" element={<IlanDetay />} />
             <Route path="/giris" element={<GirisYap />} />
+            <Route path="/kayit" element={<KayitOl />} />
+            <Route path="/sifremi-unuttum" element={<SifremiUnuttum />} />
             <Route path="/araclar" element={<AracIlanlari />} />
             <Route path="/arac-ekle" element={<AracEkle />} />
             <Route path="/surucu-ilanlari" element={<SoforIlanlari />} />
