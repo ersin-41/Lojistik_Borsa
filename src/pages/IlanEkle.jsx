@@ -1,32 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { useNavigate } from 'react-router-dom';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 
 const IlanEkle = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState(null);
+  const [yukleniyor, setYukleniyor] = useState(false);
 
-  // Kurumsal Mod Kontrolü (Checkbox için)
-  const [kurumsalMod, setKurumsalMod] = useState(false);
-
+  // Form Verileri
   const [formData, setFormData] = useState({
     nereden: '',
     nereye: '',
-    tarih: '',
+    yuklemeTarihi: '',
     yukTipi: '',
-    fiyat: '',
-    telefon: '',
-    aciklama: '',
-    firmaAdi: '' // Yeni alan: Firma Ünvanı
+    aracTipi: '',
+    kasaTipi: '',
+    tonaj: '',
+    odemeSekli: 'Peşin',
+    yuklemeAdresi: '',
+    aciklama: ''
   });
 
-  const [yukleniyor, setYukleniyor] = useState(false);
+  useEffect(() => {
+    if (location.state) {
+      // Gelen veride tarih/id gibi alanları temizle, sadece form alanlarını al
+      const { id, tarih, ekleyen_id, ekleyen_ad, ekleyen_email, durum, ...digerVeriler } = location.state;
+      setFormData(prev => ({ ...prev, ...digerVeriler }));
+    }
+  }, [location.state]);
 
   useEffect(() => {
+    // Sayfa açılınca oturum kontrolü yap
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (!currentUser) {
+        // Kullanıcı yoksa uyarı ver ve giriş sayfasına at
         alert("İlan vermek için önce giriş yapmalısınız.");
         navigate('/giris');
       } else {
@@ -37,151 +47,172 @@ const IlanEkle = () => {
   }, [navigate]);
 
   const handleChange = (e) => {
-    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-    
-    // Eğer checkbox değiştiyse state'i güncelle
-    if (e.target.name === 'kurumsalMod') {
-      setKurumsalMod(value);
-    } else {
-      setFormData({ ...formData, [e.target.name]: value });
-    }
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // EKSTRA GÜVENLİK: Kullanıcı yoksa işlemi durdur
+    if (!user) {
+      alert("Oturum süreniz dolmuş veya giriş yapmamışsınız. Lütfen tekrar giriş yapın.");
+      navigate('/giris');
+      return;
+    }
+
     setYukleniyor(true);
 
     try {
-      // KARAR ANI: İsim ve Foto ne olacak?
-      // Kurumsal ise: Formdaki firma adını al, fotoyu boş bırak (Bina ikonu çıksın diye)
-      // Şahıs ise: Google adını ve fotosunu al.
-      
-      const gorunenIsim = kurumsalMod ? formData.firmaAdi : user.displayName;
-      const gorunenFoto = kurumsalMod ? null : user.photoURL;
+      await addDoc(collection(db, "ilanlar"), {
+        ...formData,
+        ekleyen_id: user.uid,
+        ekleyen_ad: user.displayName || "İsimsiz Kullanıcı",
+        ekleyen_email: user.email,
+        durum: 'aktif',
+        tarih: serverTimestamp()
+      });
 
-      // Eğer kurumsal seçili ama isim yazmamışsa uyar
-      if (kurumsalMod && !formData.firmaAdi) {
-        alert("Lütfen firma ünvanını giriniz.");
-        setYukleniyor(false);
-        return;
+      // --- GENEL BİLDİRİM (DUYURU) OLUŞTUR ---
+      try {
+        // Sadece 'yeni ekleme' durumunda bildirim atıyoruz, düzenlemede değil
+        await addDoc(collection(db, "duyurular"), {
+          tur: 'duyuru',
+          mesaj: `Yeni Yük İlanı: ${formData.nereden} ➝ ${formData.nereye}`,
+          detay: `${formData.yukTipi} - ${formData.tonaj} Ton`,
+          tarih: serverTimestamp(),
+          ekleyen_id: user.uid,
+          link: '/ilanlar' // Kullanıcı bildirime tıklayınca nereye gitsin?
+        });
+      } catch (err) {
+        console.error("Bildirim oluşturulamadı:", err);
+        // Bildirim hatası ana işlemi durdurmamalı
       }
 
-      await addDoc(collection(db, "ilanlar"), {
-      ...formData,
-      tarih_eklenme: new Date(),
-      ekleyen_id: user.uid,
-      ekleyen_isim: gorunenIsim,
-      ekleyen_foto: gorunenFoto,
-      puan: 4.8,
-  
-      durum: 1 // <--- YENİ SATIR: 1 = Yayında (Aktif)
-    });
-      
-      alert("İlan başarıyla eklendi! 🚛");
-      navigate('/ilanlar');
+      alert("İlanınız başarıyla yayınlandı! 🚛✅");
+      navigate('/profilim');
     } catch (error) {
       console.error("Hata:", error);
-      alert("Hata: " + error.message);
+      alert("Bir hata oluştu: " + error.message);
     } finally {
       setYukleniyor(false);
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="bg-white p-8 rounded-lg shadow-lg border-t-4 border-yellow-500">
-        <h2 className="text-2xl font-bold mb-6 text-slate-800">
-          Yeni Yük İlanı Oluştur
-        </h2>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          
-          {/* --- YENİ ALAN: Kurumsal Seçimi --- */}
-          <div className="bg-slate-50 p-4 rounded border border-slate-200 mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <input 
-                type="checkbox" 
-                id="kurumsalCheck" 
-                name="kurumsalMod"
-                checked={kurumsalMod}
-                onChange={handleChange}
-                className="w-5 h-5 text-yellow-500 rounded focus:ring-yellow-500 cursor-pointer" 
-              />
-              <label htmlFor="kurumsalCheck" className="font-bold text-slate-700 cursor-pointer select-none">
-                Bu ilanı Firma/Şirket olarak yayınla
-              </label>
-            </div>
-            
-            {/* Sadece kutucuk seçiliyse bu input açılır */}
-            {kurumsalMod && (
-              <div className="mt-2 animate-pulse-once">
-                <input 
-                  required={kurumsalMod} // Eğer seçiliyse zorunlu olsun
-                  name="firmaAdi" 
-                  onChange={handleChange} 
-                  type="text" 
-                  placeholder="Örn: Ersin Lojistik Ltd. Şti." 
-                  className="w-full p-3 border border-yellow-300 rounded focus:border-yellow-500 outline-none bg-yellow-50" 
-                />
-                <p className="text-xs text-gray-500 mt-1">* Firma adı girildiğinde profil fotoğrafınız gizlenecektir.</p>
+
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-slate-800">Yeni Yük İlanı Oluştur</h1>
+          <p className="text-gray-500 mt-2">Adres bilgisi ekleyerek sürücülerin sizi kolayca bulmasını sağlayın.</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+
+          {/* --- 1. BÖLÜM: ROTA VE ADRES (DÜZENLENDİ) --- */}
+          <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
+            <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 text-lg">
+              📍 Rota ve Konum Bilgileri
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* SOL SÜTUN: Rota Bilgileri */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Nereden (Çıkış)</label>
+                  <input required name="nereden" onChange={handleChange} placeholder="Örn: İstanbul" className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white shadow-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Nereye (Varış)</label>
+                  <input required name="nereye" onChange={handleChange} placeholder="Örn: Ankara" className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white shadow-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Yükleme Tarihi</label>
+                  <input required type="date" name="yuklemeTarihi" onChange={handleChange} className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white shadow-sm" />
+                </div>
               </div>
-            )}
-          </div>
-          {/* ---------------------------------- */}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nereden</label>
-              <input required name="nereden" onChange={handleChange} type="text" placeholder="Şehir/İlçe" className="w-full p-3 border rounded focus:border-yellow-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nereye</label>
-              <input required name="nereye" onChange={handleChange} type="text" placeholder="Şehir/İlçe" className="w-full p-3 border rounded focus:border-yellow-500 outline-none" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Yükleme Tarihi</label>
-              <input required name="tarih" onChange={handleChange} type="date" className="w-full p-3 border rounded focus:border-yellow-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fiyat (TL)</label>
-              <input required name="fiyat" onChange={handleChange} type="number" placeholder="Örn: 25000" className="w-full p-3 border rounded focus:border-yellow-500 outline-none" />
+              {/* SAĞ SÜTUN: Adres (Yüksekliği Eşitledik) */}
+              <div className="flex flex-col">
+                <label className="block text-sm font-bold text-gray-700 mb-1">Tam Yükleme Adresi (Konum İçin)</label>
+                <textarea
+                  name="yuklemeAdresi"
+                  onChange={handleChange}
+                  placeholder="Örn: Organize Sanayi Bölgesi, 5. Cadde No:12 (Fabrika arka kapısı)"
+                  className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white shadow-sm flex-grow resize-none h-40 md:h-auto"
+                ></textarea>
+                <p className="text-xs text-gray-500 mt-2">ℹ️ İpucu: Buraya yazdığınız adres, sürücüler için otomatik harita bağlantısı oluşturur.</p>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Yük Tipi</label>
-              <select name="yukTipi" onChange={handleChange} className="...">
+          {/* --- 2. BÖLÜM: YÜK VE ARAÇ --- */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Yük Tipi</label>
+              <select name="yukTipi" onChange={handleChange} className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white" required>
                 <option value="">Seçiniz...</option>
-                <option value="Paletli">Paletli Yük</option>
-                <option value="Dökme">Dökme Yük</option>
-                {/* YENİ EKLENEN */}
-                <option value="Oto Taşıma">Oto Taşıma (Araç Lojistiği)</option> 
-                {/* ------------ */}
-                <option value="Konteyner">Konteyner</option>
-                <option value="Evden Eve">Evden Eve</option>
-                <option value="Frigo">Frigo (Soğuk Zincir)</option>
+                <option value="Paletli">Paletli</option>
+                <option value="Dökme">Dökme</option>
+                <option value="Makine">Makine</option>
+                <option value="Ev Eşyası">Ev Eşyası</option>
+                <option value="Koli/Kutu">Koli / Kutu</option>
               </select>
-             </div>
-             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">İletişim Numarası</label>
-                <input required name="telefon" onChange={handleChange} type="tel" placeholder="0555 123 45 67" className="w-full p-3 border rounded focus:border-yellow-500 outline-none" />
-             </div>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Araç Tipi</label>
+              <select name="aracTipi" onChange={handleChange} className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white" required>
+                <option value="">Seçiniz...</option>
+                <option value="Tır">Tır (13.60)</option>
+                <option value="Kırkayak">Kırkayak</option>
+                <option value="On Teker">10 Teker</option>
+                <option value="Kamyonet">Kamyonet</option>
+                <option value="Panelvan">Panelvan</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Kasa Özelliği</label>
+              {/* DÜZELTİLEN KISIM: Value değerlerini düzelttik */}
+              <select name="kasaTipi" onChange={handleChange} className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white" required>
+                <option value="">Seçiniz...</option>
+                <option value="Standart">Standart / Tenteli</option>
+                <option value="Frigo">Frigo (Soğutuculu)</option>
+                <option value="Damperli">Damperli</option>
+                <option value="Tanker">Tanker (SRC 5)</option>
+                <option value="Silobas">Silobas</option>
+                <option value="Acik">Açık Kasa</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Tonaj (Kg/Ton)</label>
+              <input required type="number" name="tonaj" onChange={handleChange} placeholder="Örn: 25" className="w-full p-3 border rounded outline-none focus:border-yellow-500" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Ödeme Şekli</label>
+              <div className="flex gap-4 p-3 border rounded bg-slate-50">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="odemeSekli" value="Peşin" onChange={handleChange} defaultChecked />
+                  <span className="font-medium">Peşin</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="odemeSekli" value="Vadeli" onChange={handleChange} />
+                  <span className="font-medium">Vadeli</span>
+                </label>
+              </div>
+            </div>
           </div>
 
           <div>
-             <label className="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
-             <textarea name="aciklama" onChange={handleChange} rows="3" className="w-full p-3 border rounded focus:border-yellow-500 outline-none"></textarea>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Açıklama / Notlar</label>
+            <textarea required name="aciklama" rows="3" onChange={handleChange} placeholder="Yük hakkında özel notlar..." className="w-full p-3 border rounded outline-none focus:border-yellow-500"></textarea>
           </div>
 
-          <button 
-            disabled={yukleniyor}
-            type="submit" 
-            className="w-full bg-slate-900 text-white font-bold py-4 rounded hover:bg-slate-800 transition shadow-lg mt-4 disabled:bg-gray-400">
-            {yukleniyor ? 'Kaydediliyor...' : 'İlanı Yayınla 🚀'}
+          <button type="submit" disabled={yukleniyor} className="w-full bg-slate-900 text-white font-bold py-4 rounded hover:bg-slate-800 transition shadow-lg">
+            {yukleniyor ? 'Yayınlanıyor...' : 'İlanı Yayınla 🚀'}
           </button>
         </form>
       </div>

@@ -23,6 +23,8 @@ import Gizlilik from './pages/Gizlilik';
 import KullanimSartlari from './pages/KullanimSartlari';
 import KayitOl from './pages/KayitOl'
 import SifremiUnuttum from './pages/SifremiUnuttum';
+import IlanDuzenle from './pages/IlanDuzenle';
+
 
 
 function App() {
@@ -55,6 +57,8 @@ function App() {
             <Route path="/iletisim" element={<Iletisim />} />
             <Route path="/gizlilik" element={<Gizlilik />} />
             <Route path="/kullanim-sartlari" element={<KullanimSartlari />} />
+            <Route path="/ilan-duzenle/:id" element={<IlanDuzenle />} />
+            <Route path="/ilan/:id" element={<IlanDetay />} />
           </Routes>
         </main>
 

@@ -1,286 +1,365 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../firebase';
-import { onAuthStateChanged } from 'firebase/auth';
-import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { collection, query, where, getDocs, deleteDoc, doc, orderBy, updateDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 
 const Profilim = () => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+    const [user, setUser] = useState(null);
+    const [aktifSekme, setAktifSekme] = useState('yuk_ilanlari');
+    const [yukleniyor, setYukleniyor] = useState(true);
 
-  // --- 4 FARKLI VERİ LİSTESİ ---
-  const [yukIlanlari, setYukIlanlari] = useState([]);
-  const [aracIlanlari, setAracIlanlari] = useState([]);
-  const [soforIlanlari, setSoforIlanlari] = useState([]);
-  const [isIlanlari, setIsIlanlari] = useState([]);
+    // Veri State'leri
+    const [yukIlanlarim, setYukIlanlarim] = useState([]);
+    const [aracIlanlarim, setAracIlanlarim] = useState([]);
+    const [soforIlanlarim, setSoforIlanlarim] = useState([]);
+    const [isAramaIlanlarim, setIsAramaIlanlarim] = useState([]);
+    const [gelenTeklifler, setGelenTeklifler] = useState([]);
+    const [verdigimTeklifler, setVerdigimTeklifler] = useState([]);
 
-  // --- UI STATE'LERİ ---
-  const [aktifTab, setAktifTab] = useState('yuk'); 
-  const [aramaMetni, setAramaMetni] = useState("");
-  
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        tumVerileriGetir(currentUser.uid);
-      } else {
-        navigate('/giris');
-      }
-    });
-    return () => unsubscribe();
-  }, [navigate]);
+    const navigate = useNavigate();
 
-  const tumVerileriGetir = async (uid) => {
-    setLoading(true);
-    try {
-      // 1. Yük İlanları
-      const q1 = query(collection(db, "ilanlar"), where("ekleyen_id", "==", uid));
-      const s1 = await getDocs(q1);
-      setYukIlanlari(s1.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (currentUser) {
+                setUser(currentUser);
+                await tumVerileriGetir(currentUser.uid);
+            } else {
+                navigate('/giris');
+            }
+            setYukleniyor(false);
+        });
+        return () => unsubscribe();
+    }, [navigate]);
 
-      // 2. Araç İlanları
-      const q2 = query(collection(db, "araclar"), where("ekleyen_id", "==", uid));
-      const s2 = await getDocs(q2);
-      setAracIlanlari(s2.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    const tumVerileriGetir = async (uid) => {
+        try {
+            // 1. Yük İlanları
+            const q1 = query(collection(db, "ilanlar"), where("ekleyen_id", "==", uid), orderBy("tarih", "desc"));
+            const s1 = await getDocs(q1);
+            setYukIlanlarim(s1.docs.map(d => ({ id: d.id, ...d.data(), tur: 'Yük İlanı' })));
 
-      // 3. Şoför Arayanlar
-      const q3 = query(collection(db, "sofor_ilanlari"), where("ekleyen_id", "==", uid));
-      const s3 = await getDocs(q3);
-      setSoforIlanlari(s3.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            // 2. Araç İlanları
+            const q2 = query(collection(db, "araclar"), where("ekleyen_id", "==", uid)); // orderBy index gerekebilir
+            const s2 = await getDocs(q2);
+            setAracIlanlarim(s2.docs.map(d => ({ id: d.id, ...d.data(), tur: 'Araç İlanı' })));
 
-      // 4. İş Arayanlar
-      const q4 = query(collection(db, "surucu_is_arama"), where("ekleyen_id", "==", uid));
-      const s4 = await getDocs(q4);
-      setIsIlanlari(s4.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            // 3. Şoför İlanları (İşveren)
+            const q3 = query(collection(db, "sofor_ilanlari"), where("ekleyen_id", "==", uid));
+            const s3 = await getDocs(q3);
+            setSoforIlanlarim(s3.docs.map(d => ({ id: d.id, ...d.data(), tur: 'Şoför İlanı' })));
 
-    } catch (error) {
-      console.error("Veri çekme hatası:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+            // 4. İş Arayan İlanları (Sürücü)
+            const q4 = query(collection(db, "surucu_is_arama"), where("ekleyen_id", "==", uid));
+            const s4 = await getDocs(q4);
+            setIsAramaIlanlarim(s4.docs.map(d => ({ id: d.id, ...d.data(), tur: 'İş Arama İlanı' })));
 
-  const veriSil = async (id, koleksiyonAdi) => {
-    if (window.confirm("Bu ilanı kalıcı olarak silmek istiyor musunuz?")) {
-      try {
-        await deleteDoc(doc(db, koleksiyonAdi, id));
-        if (koleksiyonAdi === 'ilanlar') setYukIlanlari(prev => prev.filter(x => x.id !== id));
-        if (koleksiyonAdi === 'araclar') setAracIlanlari(prev => prev.filter(x => x.id !== id));
-        if (koleksiyonAdi === 'sofor_ilanlari') setSoforIlanlari(prev => prev.filter(x => x.id !== id));
-        if (koleksiyonAdi === 'surucu_is_arama') setIsIlanlari(prev => prev.filter(x => x.id !== id));
-      } catch (error) {
-        alert("Silinirken hata oluştu.");
-      }
-    }
-  };
+            // 5. Gelen Teklifler (İlan Sahibi Olarak)
+            const q5 = query(collection(db, "teklifler"), where("ilanSahibiId", "==", uid), orderBy("tarih", "desc"));
+            const s5 = await getDocs(q5);
+            setGelenTeklifler(s5.docs.map(d => ({ id: d.id, ...d.data() })));
 
-  // --- 🛠️ GELİŞTİRİLMİŞ TARİH FORMATLAYICI ---
-  const tarihFormatla = (veri) => {
-    try {
-      // 1. Veri hiç yoksa
-      if (!veri) return "-";
-      
-      // 2. Firebase Timestamp formatı (seconds)
-      if (veri?.seconds) {
-        return new Date(veri.seconds * 1000).toLocaleDateString('tr-TR');
-      }
-      
-      // 3. JavaScript Date objesi
-      if (veri instanceof Date) {
-        return veri.toLocaleDateString('tr-TR');
-      }
+            // 6. Verdiğim Teklifler (Teklif Veren Olarak)
+            const q6 = query(collection(db, "teklifler"), where("teklifVerenId", "==", uid), orderBy("tarih", "desc"));
+            const s6 = await getDocs(q6);
+            setVerdigimTeklifler(s6.docs.map(d => ({ id: d.id, ...d.data() })));
 
-      // 4. String (Yazı) ise
-      if (typeof veri === 'string') {
-        // Eğer "2026-01-17" gibiyse düzeltmeye çalış
-        const denemeTarih = new Date(veri);
-        if(!isNaN(denemeTarih.getTime())){
-             return denemeTarih.toLocaleDateString('tr-TR');
+        } catch (err) {
+            console.error("Veri çekme hatası:", err);
         }
-        return veri; // Düzeltemezse yazıyı olduğu gibi bas
-      }
+    };
 
-      return "-"; // Tanımsız format
-    } catch (error) {
-      return "-"; // Hata durumunda boş dön
-    }
-  };
+    // --- İŞLEMLER ---
 
-  const aktifVeriler = () => {
-    let hamVeri = [];
-    if (aktifTab === 'yuk') hamVeri = yukIlanlari;
-    if (aktifTab === 'arac') hamVeri = aracIlanlari;
-    if (aktifTab === 'sofor') hamVeri = soforIlanlari;
-    if (aktifTab === 'is') hamVeri = isIlanlari;
-
-    if (!aramaMetni) return hamVeri;
-
-    const metin = aramaMetni.toLowerCase();
-    return hamVeri.filter(item => {
-      // Her tablo için "Tarih Hatası" vermemesi için güvenli arama (opsiyonel chaining)
-      if (aktifTab === 'yuk' || aktifTab === 'arac') {
-        return (item.nereden?.toLowerCase().includes(metin) || item.nereye?.toLowerCase().includes(metin));
-      }
-      if (aktifTab === 'sofor') return item.baslik?.toLowerCase().includes(metin);
-      if (aktifTab === 'is') return item.adSoyad?.toLowerCase().includes(metin);
-      return false;
-    });
-  };
-
-  const excelIndir = () => {
-    const veriler = aktifVeriler().map(item => {
-        // Excel için veriyi temizle
-        return {
-            ...item,
-            tarih: tarihFormatla(item.tarih) // Tarihi düzeltip Excel'e koy
+    const ilanSil = async (koleksiyon, id, setFonksiyonu) => {
+        if (window.confirm("Bu ilanı kalıcı olarak silmek istediğinize emin misiniz?")) {
+            try {
+                await deleteDoc(doc(db, koleksiyon, id));
+                setFonksiyonu(prev => prev.filter(item => item.id !== id));
+                alert("İlan silindi.");
+            } catch (error) {
+                console.error(error);
+                alert("Silme başarısız.");
+            }
         }
-    });
-    const worksheet = XLSX.utils.json_to_sheet(veriler);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Rapor");
-    XLSX.writeFile(workbook, `LojistikBorsa_${aktifTab}_Rapor.xlsx`);
-  };
+    };
 
-  if (loading) return <div className="text-center mt-20">Veriler Yükleniyor...</div>;
+    const durumuDegistir = async (id, yeniDurum) => {
+        try {
+            // Sadece Yük İlanları için (koleksiyon: 'ilanlar')
+            // 'aktif', 'pasif' (İşi Verdim)
+            await updateDoc(doc(db, "ilanlar", id), { durum: yeniDurum });
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      
-      {/* ÜST BİLGİ KARTI */}
-      <div className="bg-slate-900 text-white rounded-lg p-6 mb-6 flex flex-col md:flex-row items-center gap-6 print:hidden shadow-lg">
-        <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center text-2xl text-slate-900 font-bold border-2 border-white">
-          {user?.displayName?.charAt(0).toUpperCase()}
-        </div>
-        <div className="flex-1 text-center md:text-left">
-          <h1 className="text-2xl font-bold">{user?.displayName}</h1>
-          <p className="text-gray-400 text-sm">{user?.email}</p>
-        </div>
-        <div className="flex gap-4 text-center">
-             <div><span className="block font-bold text-yellow-500 text-xl">{yukIlanlari.length}</span><span className="text-xs text-gray-400">Yük</span></div>
-             <div><span className="block font-bold text-yellow-500 text-xl">{aracIlanlari.length}</span><span className="text-xs text-gray-400">Araç</span></div>
-             <div><span className="block font-bold text-yellow-500 text-xl">{soforIlanlari.length + isIlanlari.length}</span><span className="text-xs text-gray-400">Diğer</span></div>
-        </div>
-      </div>
+            setYukIlanlarim(prev => prev.map(ilan =>
+                ilan.id === id ? { ...ilan, durum: yeniDurum } : ilan
+            ));
+            alert(yeniDurum === 'pasif' ? "İlan pasife alındı (İş Verildi). ✅" : "İlan tekrar aktif edildi.");
+        } catch (error) {
+            console.error("Durum güncelleme hatası:", error);
+        }
+    };
 
-      {/* SEKMELER */}
-      <div className="flex flex-wrap gap-2 mb-4 print:hidden border-b border-gray-200 pb-2">
-        <button onClick={() => setAktifTab('yuk')} className={`px-4 py-2 rounded-t font-bold transition ${aktifTab === 'yuk' ? 'bg-yellow-500 text-slate-900' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>📦 Yük İlanları</button>
-        <button onClick={() => setAktifTab('arac')} className={`px-4 py-2 rounded-t font-bold transition ${aktifTab === 'arac' ? 'bg-yellow-500 text-slate-900' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>🚛 Araç İlanları</button>
-        <button onClick={() => setAktifTab('sofor')} className={`px-4 py-2 rounded-t font-bold transition ${aktifTab === 'sofor' ? 'bg-yellow-500 text-slate-900' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>📢 Şoför Arıyorum</button>
-        <button onClick={() => setAktifTab('is')} className={`px-4 py-2 rounded-t font-bold transition ${aktifTab === 'is' ? 'bg-yellow-500 text-slate-900' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>📄 İş Arıyorum</button>
-      </div>
+    const tekrarIlanVer = (ilan) => {
+        // İlanEkle sayfasına veriyi gönder
+        navigate('/ilan-ekle', { state: ilan });
+    };
 
-      {/* ARAÇ ÇUBUĞU */}
-      <div className="bg-white p-4 rounded shadow mb-4 border flex flex-col md:flex-row justify-between items-center gap-4 print:hidden">
-        <input 
-          type="text" 
-          placeholder="🔍 Listede ara..." 
-          value={aramaMetni}
-          onChange={(e) => setAramaMetni(e.target.value)}
-          className="border p-2 rounded w-full md:w-64 outline-none focus:border-yellow-500"
-        />
-        <div className="flex gap-2">
-            <button onClick={excelIndir} className="bg-green-600 text-white px-3 py-2 rounded text-sm font-bold hover:bg-green-700">📊 Excel</button>
-            <button onClick={() => window.print()} className="bg-slate-700 text-white px-3 py-2 rounded text-sm font-bold hover:bg-slate-800">🖨️ Yazdır</button>
-        </div>
-      </div>
+    const duzenleYonlendir = (ilan, tur) => {
+        if (tur === 'Arac') {
+            navigate('/arac-ekle', { state: ilan });
+        } else if (tur === 'Sofor') {
+            navigate('/sofor-ilani-ver', { state: ilan });
+        } else if (tur === 'IsArama') {
+            navigate('/surucu-is-arama-ekle', { state: ilan });
+        }
+    };
 
-      {/* TABLOLAR */}
-      <div className="bg-white rounded shadow overflow-hidden border print:border-none print:shadow-none min-h-[300px]">
-        <div className="overflow-x-auto">
-          
-          {/* YÜK İLANLARI */}
-          {aktifTab === 'yuk' && (
-            <table className="w-full text-left text-sm">
-              <thead className="bg-gray-100 text-gray-700 uppercase font-bold text-xs">
-                <tr><th className="p-3">Tarih</th><th className="p-3">Nereden</th><th className="p-3">Nereye</th><th className="p-3">Yük</th><th className="p-3 text-right">Fiyat</th><th className="p-3 text-center print:hidden">İşlem</th></tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {aktifVeriler().map(ilan => (
-                  <tr key={ilan.id} className="hover:bg-yellow-50">
-                    <td className="p-3 whitespace-nowrap text-gray-500">{tarihFormatla(ilan.tarih)}</td>
-                    <td className="p-3 font-medium">{ilan.nereden}</td>
-                    <td className="p-3 font-medium">{ilan.nereye}</td>
-                    <td className="p-3">{ilan.yukTipi}</td>
-                    <td className="p-3 text-right font-bold text-green-600">{ilan.fiyat} ₺</td>
-                    <td className="p-3 text-center print:hidden"><button onClick={() => veriSil(ilan.id, 'ilanlar')} className="text-red-500 border border-red-200 px-2 py-1 rounded text-xs font-bold hover:bg-red-50">Sil</button></td>
-                  </tr>
+    const raporAlExcel = () => {
+        let veri = [];
+        let baslik = "Rapor";
+
+        if (aktifSekme === 'yuk_ilanlari') { veri = yukIlanlarim; baslik = "Yuk_Ilanlarim"; }
+        else if (aktifSekme === 'araclar') { veri = aracIlanlarim; baslik = "Arac_Ilanlarim"; }
+        else if (aktifSekme === 'sofor_ilanlari') { veri = soforIlanlarim; baslik = "Sofor_Ilanlarim"; }
+        else if (aktifSekme === 'teklifler') { veri = gelenTeklifler; baslik = "Gelen_Teklifler"; }
+
+        if (veri.length === 0) return alert("İndirilecek veri yok.");
+
+        // Veriyi Excel formatına hazırla (istenmeyen alanları çıkarabiliriz)
+        const temizVeri = veri.map(({ ekleyen_id, ...rest }) => rest);
+
+        const worksheet = XLSX.utils.json_to_sheet(temizVeri);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Rapor");
+        XLSX.writeFile(workbook, `${baslik}_${new Date().toLocaleDateString()}.xlsx`);
+    };
+
+    const yazdir = () => {
+        window.print();
+    };
+
+    const tarihFormatla = (ts) => {
+        if (!ts) return "-";
+        const date = ts.toDate ? ts.toDate() : new Date(ts);
+        return date.toLocaleDateString('tr-TR');
+    };
+
+    if (yukleniyor) return <div className="text-center p-10">Yükleniyor...</div>;
+
+    return (
+        <div className="max-w-7xl mx-auto px-4 py-8">
+
+            {/* --- ÜST KART --- */}
+            <div className="bg-white p-6 rounded-lg shadow-md mb-8 flex flex-col md:flex-row justify-between items-center gap-4 border border-gray-100 print:hidden">
+                <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-slate-900 text-yellow-500 rounded-full flex items-center justify-center text-3xl font-bold shadow-lg border-2 border-yellow-500">
+                        {user?.displayName ? user.displayName.charAt(0).toUpperCase() : "U"}
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800">{user?.displayName}</h1>
+                        <p className="text-gray-500 text-sm">{user?.email}</p>
+                    </div>
+                </div>
+                <div className="flex gap-2">
+                    <button onClick={raporAlExcel} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition flex items-center gap-2">
+                        📊 Excel Rapor
+                    </button>
+                    <button onClick={yazdir} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition flex items-center gap-2">
+                        🖨️ Yazdır
+                    </button>
+                    <button onClick={() => signOut(auth)} className="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded hover:bg-red-600 hover:text-white transition">
+                        Çıkış Yap
+                    </button>
+                </div>
+            </div>
+
+            {/* --- SEKMELER --- */}
+            <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200 pb-2 print:hidden">
+                {[
+                    { id: 'yuk_ilanlari', label: `Yük İlanlarım (${yukIlanlarim.length})`, icon: '📦' },
+                    { id: 'araclar', label: `Araçlarım (${aracIlanlarim.length})`, icon: '🚛' },
+                    { id: 'sofor_ilanlari', label: `Şoför İlanlarım (${soforIlanlarim.length})`, icon: '📢' },
+                    { id: 'is_arama', label: `İş Başvurularım (${isAramaIlanlarim.length})`, icon: '📄' },
+                    { id: 'teklifler', label: `Gelen Teklifler (${gelenTeklifler.length})`, icon: '💬' },
+                    { id: 'verdigim_teklifler', label: `Verdiğim Teklifler (${verdigimTeklifler.length})`, icon: '📤' }
+                ].map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setAktifSekme(tab.id)}
+                        className={`px-4 py-2 rounded-t-lg font-bold transition flex items-center gap-2 ${aktifSekme === tab.id ? 'bg-slate-800 text-yellow-500' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                    >
+                        <span>{tab.icon}</span> {tab.label}
+                    </button>
                 ))}
-                {aktifVeriler().length === 0 && <tr><td colSpan="6" className="p-6 text-center text-gray-400">Kayıt yok.</td></tr>}
-              </tbody>
-            </table>
-          )}
+            </div>
 
-          {/* ARAÇ İLANLARI */}
-          {aktifTab === 'arac' && (
-            <table className="w-full text-left text-sm">
-              <thead className="bg-gray-100 text-gray-700 uppercase font-bold text-xs">
-                <tr><th className="p-3">Tarih</th><th className="p-3">Konum</th><th className="p-3">İstikamet</th><th className="p-3">Araç</th><th className="p-3">Kasa</th><th className="p-3 text-center print:hidden">İşlem</th></tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {aktifVeriler().map(ilan => (
-                  <tr key={ilan.id} className="hover:bg-yellow-50">
-                    <td className="p-3 whitespace-nowrap text-gray-500">{tarihFormatla(ilan.tarih)}</td>
-                    <td className="p-3 font-medium">{ilan.nereden}</td>
-                    <td className="p-3 font-medium">{ilan.nereye}</td>
-                    <td className="p-3">{ilan.aracTipi}</td>
-                    <td className="p-3">{ilan.kasaTipi}</td>
-                    <td className="p-3 text-center print:hidden"><button onClick={() => veriSil(ilan.id, 'araclar')} className="text-red-500 border border-red-200 px-2 py-1 rounded text-xs font-bold hover:bg-red-50">Sil</button></td>
-                  </tr>
-                ))}
-                {aktifVeriler().length === 0 && <tr><td colSpan="6" className="p-6 text-center text-gray-400">Kayıt yok.</td></tr>}
-              </tbody>
-            </table>
-          )}
+            {/* --- İÇERİK ALANI --- */}
+            <div className="min-h-[300px]">
 
-          {/* ŞOFÖR İLANLARI */}
-          {aktifTab === 'sofor' && (
-            <table className="w-full text-left text-sm">
-              <thead className="bg-gray-100 text-gray-700 uppercase font-bold text-xs">
-                <tr><th className="p-3">Tarih</th><th className="p-3">Başlık</th><th className="p-3">Şehir</th><th className="p-3">Maaş/Şartlar</th><th className="p-3 text-center print:hidden">İşlem</th></tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {aktifVeriler().map(ilan => (
-                  <tr key={ilan.id} className="hover:bg-yellow-50">
-                    <td className="p-3 whitespace-nowrap text-gray-500">{tarihFormatla(ilan.tarih)}</td>
-                    <td className="p-3 font-medium">{ilan.baslik}</td>
-                    <td className="p-3">{ilan.sehir}</td>
-                    <td className="p-3">{ilan.maas}</td>
-                    <td className="p-3 text-center print:hidden"><button onClick={() => veriSil(ilan.id, 'sofor_ilanlari')} className="text-red-500 border border-red-200 px-2 py-1 rounded text-xs font-bold hover:bg-red-50">Sil</button></td>
-                  </tr>
-                ))}
-                {aktifVeriler().length === 0 && <tr><td colSpan="5" className="p-6 text-center text-gray-400">Kayıt yok.</td></tr>}
-              </tbody>
-            </table>
-          )}
+                {/* 1. YÜK İLANLARI */}
+                {aktifSekme === 'yuk_ilanlari' && (
+                    <div className="space-y-4">
+                        {yukIlanlarim.length === 0 && <p className="text-gray-500 text-center py-10">Henüz yük ilanı vermediniz.</p>}
+                        {yukIlanlarim.map(ilan => (
+                            <div key={ilan.id} className={`bg-white p-5 rounded-lg shadow-sm border transaction relative ${ilan.durum === 'pasif' ? 'border-l-4 border-l-red-500 opacity-75' : 'border-l-4 border-l-green-500'}`}>
+                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <h3 className="font-bold text-lg text-slate-800">{ilan.nereden} ➝ {ilan.nereye}</h3>
+                                            {ilan.durum === 'pasif' && <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded font-bold">Pasif / Verildi</span>}
+                                            {ilan.durum !== 'pasif' && <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded font-bold">Aktif</span>}
+                                        </div>
+                                        <p className="text-sm text-gray-500">{tarihFormatla(ilan.tarih)} - {ilan.yukTipi} - {ilan.tonaj} Ton</p>
+                                    </div>
 
-          {/* İŞ ARAYAN */}
-          {aktifTab === 'is' && (
-            <table className="w-full text-left text-sm">
-              <thead className="bg-gray-100 text-gray-700 uppercase font-bold text-xs">
-                <tr><th className="p-3">Tarih</th><th className="p-3">Ad Soyad</th><th className="p-3">Ehliyet</th><th className="p-3">Tecrübe</th><th className="p-3 text-center print:hidden">İşlem</th></tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {aktifVeriler().map(ilan => (
-                  <tr key={ilan.id} className="hover:bg-yellow-50">
-                    <td className="p-3 whitespace-nowrap text-gray-500">{tarihFormatla(ilan.tarih)}</td>
-                    <td className="p-3 font-medium">{ilan.adSoyad}</td>
-                    <td className="p-3">{ilan.ehliyet}</td>
-                    <td className="p-3">{ilan.tecrube}</td>
-                    <td className="p-3 text-center print:hidden"><button onClick={() => veriSil(ilan.id, 'surucu_is_arama')} className="text-red-500 border border-red-200 px-2 py-1 rounded text-xs font-bold hover:bg-red-50">Sil</button></td>
-                  </tr>
-                ))}
-                {aktifVeriler().length === 0 && <tr><td colSpan="5" className="p-6 text-center text-gray-400">Kayıt yok.</td></tr>}
-              </tbody>
-            </table>
-          )}
+                                    <div className="flex flex-wrap gap-2 print:hidden">
+                                        {ilan.durum !== 'pasif' ? (
+                                            <button onClick={() => durumuDegistir(ilan.id, 'pasif')} className="bg-slate-700 text-white px-3 py-1 rounded text-sm hover:bg-slate-600">
+                                                🤝 İşi Verdim
+                                            </button>
+                                        ) : (
+                                            <button onClick={() => tekrarIlanVer(ilan)} className="bg-yellow-500 text-slate-900 px-3 py-1 rounded text-sm font-bold hover:bg-yellow-400">
+                                                🔄 Tekrar İlan Ver
+                                            </button>
+                                        )}
 
+                                        <button onClick={() => navigate(`/ilan-duzenle/${ilan.id}`)} className="bg-blue-50 text-blue-600 border border-blue-200 px-3 py-1 rounded text-sm hover:bg-blue-100">
+                                            ✏️ Düzenle
+                                        </button>
+                                        <button onClick={() => ilanSil("ilanlar", ilan.id, setYukIlanlarim)} className="bg-red-50 text-red-600 border border-red-200 px-3 py-1 rounded text-sm hover:bg-red-100">
+                                            🗑️ Sil
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* 2. ARAÇ İLANLARI */}
+                {aktifSekme === 'araclar' && (
+                    <div className="space-y-4">
+                        {aracIlanlarim.length === 0 && <p className="text-gray-500 text-center py-10">Kayıtlı aracınız yok.</p>}
+                        {aracIlanlarim.map(arac => (
+                            <div key={arac.id} className="bg-white p-4 rounded border flex justify-between items-center relative">
+                                <div>
+                                    <h3 className="font-bold">{arac.plaka || "Plaka Yok"} - {arac.aracTipi}</h3>
+                                    <p className="text-sm text-gray-500">{arac.nereden} (Konum)</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => duzenleYonlendir(arac, 'Arac')} className="bg-blue-50 text-blue-600 border border-blue-200 px-3 py-1 rounded text-sm hover:bg-blue-100">
+                                        ✏️ Düzenle
+                                    </button>
+                                    <button onClick={() => ilanSil("araclar", arac.id, setAracIlanlarim)} className="bg-red-50 text-red-600 border border-red-200 px-3 py-1 rounded text-sm hover:bg-red-100">
+                                        🗑️ Sil
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+
+
+                {/* 4. VERDİĞİM TEKLİFLER (YENİ) */}
+                {aktifSekme === 'verdigim_teklifler' && (
+                    <div className="space-y-4">
+                        {verdigimTeklifler.length === 0 && <p className="text-gray-500 text-center py-10">Henüz bir teklif vermediniz.</p>}
+                        {verdigimTeklifler.map(teklif => (
+                            <div key={teklif.id} className="bg-white p-4 rounded border shadow-sm relative overflow-hidden">
+                                {teklif.durum === 'bekliyor' && <div className="absolute top-0 right-0 bg-gray-200 text-gray-700 text-xs font-bold px-2 py-1 rounded-bl">Bekliyor ⏳</div>}
+                                {teklif.durum === 'onaylandi' && <div className="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-bl">Onaylandı ✅</div>}
+                                {teklif.durum === 'reddedildi' && <div className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl">Reddedildi ❌</div>}
+
+                                <h3 className="font-bold text-slate-800">{teklif.ilanBaslik || "İlan Başlığı Yok"}</h3>
+                                <div className="text-lg font-bold text-yellow-600 my-1">{teklif.fiyat} ₺</div>
+                                <p className="text-sm text-gray-600">Teklif Notunuz: "{teklif.aciklama}"</p>
+                                <p className="text-xs text-gray-400 mt-2">{tarihFormatla(teklif.tarih)}</p>
+
+                                {teklif.durum === 'onaylandi' && (
+                                    <div className="mt-3 bg-green-50 text-green-800 p-2 rounded text-sm font-bold border border-green-200">
+                                        🎉 Teklifiniz kabul edildi! İlan sahibi ile iletişime geçebilirsiniz.
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* 3. TEKLİFLER (Gelenler) */}
+                {aktifSekme === 'teklifler' && (
+                    <div className="space-y-4">
+                        {gelenTeklifler.length === 0 && <p className="text-gray-500 text-center py-10">Gelen teklif yok.</p>}
+                        {gelenTeklifler.map(teklif => (
+                            <div key={teklif.id} className="bg-white p-4 rounded border-l-4 border-blue-500 shadow-sm">
+                                <div className="flex justify-between">
+                                    <div>
+                                        <div className="text-xl font-bold">{teklif.fiyat} ₺</div>
+                                        <div className="text-sm text-gray-600">Teklif Veren: <b>{teklif.teklifVerenAd}</b></div>
+                                        <div className="text-sm italic mt-1 text-gray-500">"{teklif.aciklama}"</div>
+                                    </div>
+                                    <a href={`tel:${teklif.teklifVerenTel}`} className="bg-green-600 text-white h-10 px-4 rounded flex items-center gap-2 hover:bg-green-700 print:hidden">
+                                        📞 Ara
+                                    </a>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* DİĞER SEKMELER İÇİN BASİT LİSTELEME */}
+                {(aktifSekme === 'sofor_ilanlari' || aktifSekme === 'is_arama') && (
+                    <div className="space-y-4">
+                        {(aktifSekme === 'sofor_ilanlari' && soforIlanlarim.length === 0) && <p className="text-center py-10 text-gray-500">Şoför ilanı vermediniz.</p>}
+                        {(aktifSekme === 'is_arama' && isAramaIlanlarim.length === 0) && <p className="text-center py-10 text-gray-500">İş arama kaydınız yok.</p>}
+
+                        {(aktifSekme === 'sofor_ilanlari' && soforIlanlarim.length > 0) && (
+                            <div className="space-y-4">
+                                {soforIlanlarim.map(i => (
+                                    <div key={i.id} className="bg-white border p-4 rounded flex justify-between items-center relative">
+                                        <div>
+                                            <h3 className="font-bold text-slate-800">{i.baslik}</h3>
+                                            <p className="text-sm text-gray-500">{i.sehir} - {i.ehliyet}</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => duzenleYonlendir(i, 'Sofor')} className="bg-blue-50 text-blue-600 border border-blue-200 px-3 py-1 rounded text-sm hover:bg-blue-100">
+                                                ✏️ Düzenle
+                                            </button>
+                                            <button onClick={() => ilanSil("sofor_ilanlari", i.id, setSoforIlanlarim)} className="bg-red-50 text-red-600 border border-red-200 px-3 py-1 rounded text-sm hover:bg-red-100">
+                                                🗑️ Sil
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {(aktifSekme === 'is_arama' && isAramaIlanlarim.length > 0) && (
+                            <div className="space-y-4">
+                                {isAramaIlanlarim.map(i => (
+                                    <div key={i.id} className="bg-white border p-4 rounded flex justify-between items-center relative">
+                                        <div>
+                                            <h3 className="font-bold text-slate-800">{i.adSoyad}</h3>
+                                            <p className="text-sm text-gray-500">{i.ehliyet} - {i.tecrube} Yıl Tecrübe</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => duzenleYonlendir(i, 'IsArama')} className="bg-blue-50 text-blue-600 border border-blue-200 px-3 py-1 rounded text-sm hover:bg-blue-100">
+                                                ✏️ Düzenle
+                                            </button>
+                                            <button onClick={() => ilanSil("surucu_is_arama", i.id, setIsAramaIlanlarim)} className="bg-red-50 text-red-600 border border-red-200 px-3 py-1 rounded text-sm hover:bg-red-100">
+                                                🗑️ Sil
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default Profilim;
