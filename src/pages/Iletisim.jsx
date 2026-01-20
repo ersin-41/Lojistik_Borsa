@@ -57,7 +57,7 @@ const Iletisim = () => {
                     <span>📞</span> 0850 123 45 67
                 </p>
                 <p className="flex items-center gap-2">
-                    <span>✉️</span> <a href="mailto:info@lojistikborsa.com" className="text-blue-600 hover:underline">info@lojistikborsa.com</a>
+                    <span>✉️</span> <a href="mailto:info@lojistikborsa.com" className="text-blue-600 hover:underline">info@lojistik365.com.tr</a>
                 </p>
             </div>
             

@@ -54,7 +54,7 @@ const Footer = () => {
               </li>
               <li className="flex items-center gap-3">
                 <span className="text-yellow-500">✉️</span>
-                <a href="mailto:destek@lojistik365.com" className="hover:text-white">destek@lojistik365.com</a>
+                <a href="mailto:destek@lojistik365.com" className="hover:text-white">info@lojistik365.com.tr</a>
               </li>
               <li className="flex items-center gap-3">
                 <span className="text-yellow-500">📞</span>
