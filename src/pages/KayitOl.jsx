@@ -11,6 +11,7 @@ const KayitOl = () => {
   const [password, setPassword] = useState('');
   const [adSoyad, setAdSoyad] = useState('');
   const [telefon, setTelefon] = useState(''); // YENİ: Telefon State
+  const [sartlarKabul, setSartlarKabul] = useState(false); // YENİ: Şartlar Onayı
   const [hata, setHata] = useState('');
   const [yukleniyor, setYukleniyor] = useState(false);
 
@@ -20,11 +21,19 @@ const KayitOl = () => {
     setHata('');
     setYukleniyor(true);
 
+    if (!sartlarKabul) {
+      setHata("Lütfen Kullanım Şartları'nı okuyup kabul ediniz.");
+      setYukleniyor(false);
+      return;
+    }
+
     if (password.length < 6) {
       setHata("Şifre en az 6 karakter olmalıdır.");
       setYukleniyor(false);
       return;
     }
+
+    // ... (Diğer kontroller aynı) ...
 
     // Telefon kontrolü (Basit)
     if (!telefon || telefon.length < 10) {
@@ -33,13 +42,11 @@ const KayitOl = () => {
       return;
     }
 
+    // ... (Kayıt işlemleri aynı) ...
     try {
       // E-posta opsiyonel mantığı:
-      // Eğer e-posta girilmediyse, telefon numarasını e-posta gibi kullan: 5551234567@lojistik365.com
-      // Bu sayede Firebase Auth E-posta/Şifre altyapısını bozmadan telefonla giriş imkanı sağlarız.
       let kayitEmail = email;
       if (!kayitEmail) {
-        // Boşlukları ve özel karakterleri temizle
         const temizTel = telefon.replace(/\D/g, '');
         kayitEmail = `${temizTel}@lojistik365.com`;
       }
@@ -56,13 +63,15 @@ const KayitOl = () => {
       // 3. Veritabanına kaydet
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
-        email: kayitEmail, // Oluşturulan veya girilen e-posta
-        telefon: telefon,  // YENİ: Telefonu kaydet
+        email: kayitEmail,
+        telefon: telefon,
         displayName: adSoyad,
         photoURL: null,
         role: 'user',
         createdAt: new Date(),
-        epostaGizli: !email // Eğer kullanıcı e-posta girmediyse, sistem tarafından oluşturulduğunu işaretleyebiliriz (opsiyonel)
+        epostaGizli: !email,
+        sartlarKabul: true, // DB'ye de onayı kaydedelim (Timestamp veya boolean)
+        sartlarKabulTarihi: new Date()
       });
 
       // 4. Bildirim Gönder
@@ -140,7 +149,6 @@ const KayitOl = () => {
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">E-Posta Adresi <span className="text-gray-400 font-normal">(Opsiyonel)</span></label>
             <input
-
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -159,6 +167,20 @@ const KayitOl = () => {
               className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-yellow-500 outline-none transition"
               placeholder="En az 6 karakter"
             />
+          </div>
+
+          {/* SÖZLEŞME ONAY KUTUSU */}
+          <div className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              id="sartlar"
+              checked={sartlarKabul}
+              onChange={(e) => setSartlarKabul(e.target.checked)}
+              className="mt-1 w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+            />
+            <label htmlFor="sartlar" className="text-sm text-gray-700">
+              <Link to="/kullanim-sartlari" target="_blank" className="text-yellow-600 hover:underline font-bold">Kullanım Şartları</Link>'nı okudum ve kabul ediyorum.
+            </label>
           </div>
 
           <button

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { auth, provider } from '../firebase';
+import { auth, provider, db } from '../firebase';
 import { signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useNavigate, Link } from 'react-router-dom';
 
 const GirisYap = () => {
@@ -16,12 +17,33 @@ const GirisYap = () => {
     setHata('');
 
     let girisDegeri = email;
-    // Eğer girilen değer sadece rakamlardan oluşuyorsa (telefon), dummy e-posta formatına çevir
-    // Basit kontrol: '@' yoksa ve rakam içeriyorsa
+    // Eğer girilen değer sadece rakamlardan oluşuyorsa (telefon)
+    // 1. Önce Firestore'da bu telefona sahip kullanıcı var mı diye bak
+    // 2. Varsa onun gerçek emailini al
+    // 3. Yoksa eski usul dummy email dene
     if (!girisDegeri.includes('@')) {
       const temizTel = girisDegeri.replace(/\D/g, '');
-      if (temizTel.length >= 10) {
-        girisDegeri = `${temizTel}@lojistik365.com`;
+
+      try {
+        const q = query(collection(db, "users"), where("telefon", "==", temizTel));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          // Kullanıcı bulundu, gerçek emailini al
+          const userDoc = querySnapshot.docs[0].data();
+          girisDegeri = userDoc.email;
+        } else {
+          // Firestore'da bulunamadı, eski dummy mantığı ile devam et
+          if (temizTel.length >= 10) {
+            girisDegeri = `${temizTel}@lojistik365.com`;
+          }
+        }
+      } catch (err) {
+        console.error("Telefon sorgu hatası:", err);
+        // Hata durumunda da dummy dene, belki çalışır
+        if (temizTel.length >= 10) {
+          girisDegeri = `${temizTel}@lojistik365.com`;
+        }
       }
     }
 
