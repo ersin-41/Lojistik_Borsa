@@ -6,16 +6,16 @@ const Footer = () => {
     <footer className="bg-slate-900 text-slate-300 mt-auto border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          
+
           {/* 1. SÜTUN: Marka ve Slogan */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2 group">
-                <div className="bg-white p-1.5 rounded group-hover:scale-105 transition">
-                    <span className="text-2xl">🚛</span>
-                </div>
-                <span className="text-2xl font-bold text-white tracking-tight">
-                    Lojistik<span className="text-yellow-500">365</span>
-                </span>
+              <div className="bg-white p-1.5 rounded group-hover:scale-105 transition">
+                <span className="text-2xl">🚛</span>
+              </div>
+              <span className="text-2xl font-bold text-white tracking-tight">
+                Lojistik<span className="text-yellow-500">365</span>
+              </span>
             </Link>
             <p className="text-sm text-slate-400 leading-relaxed">
               Yükünüz yolda, işiniz yolunda. Türkiye'nin 81 iline uzanan dijital lojistik ağı ile yük ve araç bulmak artık çok kolay.
@@ -50,15 +50,11 @@ const Footer = () => {
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-3">
                 <span className="text-yellow-500">📍</span>
-                <span>İzmit, Kocaeli<br/>Türkiye</span>
+                <span>Türkiye Geneli<br />Dijital Lojistik Platformu</span>
               </li>
               <li className="flex items-center gap-3">
                 <span className="text-yellow-500">✉️</span>
-                <a href="mailto:destek@lojistik365.com" className="hover:text-white">info@lojistik365.com.tr</a>
-              </li>
-              <li className="flex items-center gap-3">
-                <span className="text-yellow-500">📞</span>
-                <span>0850 123 45 67</span>
+                <a href="mailto:info@lojistik365.com.tr" className="hover:text-white">info@lojistik365.com.tr</a>
               </li>
             </ul>
           </div>
@@ -69,7 +65,7 @@ const Footer = () => {
         <div className="border-t border-slate-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-slate-500">
           <p>&copy; 2026 Lojistik365 Platformu. Tüm hakları saklıdır.</p>
           <div className="flex gap-4 mt-4 md:mt-0">
-             <span>Design by Lojistik365</span>
+            <span>Design by Lojistik365</span>
           </div>
         </div>
       </div>
