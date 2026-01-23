@@ -265,7 +265,7 @@ const Navbar = () => {
             <Link to="/surucu-is-arayanlar" className="hover:text-yellow-500 transition font-medium">İş Arayanlar</Link>
 
             {/* SOSYAL MEDYA İKONLARI (Masaüstü) */}
-            <div className="flex items-center gap-3 border-r border-slate-700 pr-6 mr-2">
+            <div className="flex items-center gap-3 mr-2">
               <a href="https://www.facebook.com/profile.php?id=61587067018884" target="_blank" rel="noreferrer" className="group">
                 <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center border border-slate-600 group-hover:border-yellow-500 transition">
                   {/* Facebook F */}
