@@ -46,7 +46,7 @@ const Gizlilik = () => {
         <section>
           <h2 className="text-xl font-bold text-slate-800 mb-2">5. İletişim</h2>
           <p>
-            Gizlilik politikamızla ilgili sorularınız için <a href="mailto:destek@lojistik365.com" className="text-yellow-600 font-bold">destek@lojistik365.com</a> adresinden bize ulaşabilirsiniz.
+            Gizlilik politikamızla ilgili sorularınız için <a href="mailto:info@lojistik365.com.tr" className="text-yellow-600 font-bold">info@lojistik365.com.tr</a> adresinden bize ulaşabilirsiniz.
           </p>
         </section>
       </div>

@@ -192,7 +192,7 @@ const IlanDetay = () => {
 
           {/* --- İLETİŞİM BUTONLARI --- */}
           <h3 className="font-bold text-slate-800 mb-4 text-lg">İlan Sahibi İle İletişim</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="flex flex-col gap-4">
 
             {/* 1. TEKLİF VER (Modal Aç) */}
             <button
@@ -201,41 +201,45 @@ const IlanDetay = () => {
                 if (user.uid === ilan.ekleyen_id) return alert("Kendi ilanınız");
                 setModalAcik(true);
               }}
-              className="flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-slate-900 py-3 rounded-lg font-bold transition shadow-md col-span-2"
+              className="w-full flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-slate-900 py-4 rounded-lg font-bold transition shadow-md text-lg"
             >
               💬 Teklif Ver
             </button>
 
-            {/* 2. TELEFON İLE ARA (Varsa) */}
-            {ilanSahibi?.telefon ? (
-              <a
-                href={`tel:${ilanSahibi.telefon}`}
-                className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition shadow-md"
-              >
-                📞 Hemen Ara
-              </a>
-            ) : (
-              <button disabled className="flex items-center justify-center gap-2 bg-gray-200 text-gray-400 py-3 rounded-lg font-bold cursor-not-allowed">
-                📵 Telefon Gizli
-              </button>
-            )}
+            <div className="flex flex-col md:flex-row gap-4">
+              {/* 2. TELEFON İLE ARA (Varsa) */}
+              {ilanSahibi?.telefon ? (
+                <a
+                  href={`tel:${ilanSahibi.telefon}`}
+                  className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition shadow-md"
+                >
+                  📞 Hemen Ara
+                </a>
+              ) : (
+                <button disabled className="flex-1 flex items-center justify-center gap-2 bg-gray-200 text-gray-400 py-3 rounded-lg font-bold cursor-not-allowed">
+                  📵 Telefon Gizli
+                </button>
+              )}
 
-            {/* 3. WHATSAPP (Varsa) */}
-            {ilanSahibi?.telefon ? (
-              <a
-                href={wpLink}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-bold transition shadow-md"
-              >
-                📱 WhatsApp
-              </a>
-            ) : (
-              <button disabled className="flex items-center justify-center gap-2 bg-gray-200 text-gray-400 py-3 rounded-lg font-bold cursor-not-allowed">
-                📱 WP Yok
-              </button>
-            )}
-
+              {/* 3. WHATSAPP (Varsa) */}
+              {ilanSahibi?.telefon ? (
+                <a
+                  href={wpLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white py-3 rounded-lg font-bold transition shadow-md"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z" />
+                  </svg>
+                  WhatsApp
+                </a>
+              ) : (
+                <button disabled className="flex-1 flex items-center justify-center gap-2 bg-gray-200 text-gray-400 py-3 rounded-lg font-bold cursor-not-allowed">
+                  📱 WP Yok
+                </button>
+              )}
+            </div>
           </div>
 
           <p className="text-xs text-center text-gray-400 mt-4">
