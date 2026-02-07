@@ -162,6 +162,10 @@ const Profilim = () => {
                     </div>
                 </div>
                 <div className="flex gap-2">
+                    <button onClick={() => navigate('/toplu-yukle')} className="bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-600 transition flex flex-col items-center justify-center gap-0 leading-tight">
+                        <span className="font-bold">Toplu Yük Ekle</span>
+                        <span className="text-[10px] opacity-80 font-normal">(Excel Formatı)</span>
+                    </button>
                     <button onClick={raporAlExcel} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition flex items-center gap-2">
                         📊 Excel Rapor
                     </button>

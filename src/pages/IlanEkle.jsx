@@ -21,6 +21,8 @@ const IlanEkle = () => {
     tonaj: '',
     odemeSekli: 'Peşin',
     yuklemeAdresi: '',
+    teslimatAdresi: '', // YENİ: Teslimat Adresi
+    mesafe: '', // YENİ: Mesafe (KM)
     aciklama: ''
   });
 
@@ -104,7 +106,7 @@ const IlanEkle = () => {
 
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-slate-800">Yeni Yük İlanı Oluştur</h1>
-          <p className="text-gray-500 mt-2">Adres bilgisi ekleyerek sürücülerin sizi kolayca bulmasını sağlayın.</p>
+          <p className="text-gray-500 mt-2">Adres ve mesafe bilgisi ekleyerek maliyetleri şeffaflaştırın.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -120,28 +122,46 @@ const IlanEkle = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Nereden (Çıkış)</label>
-                  <input required name="nereden" onChange={handleChange} placeholder="Örn: İstanbul" className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white shadow-sm" />
+                  <input required name="nereden" value={formData.nereden} onChange={handleChange} placeholder="Örn: İstanbul" className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white shadow-sm" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Nereye (Varış)</label>
-                  <input required name="nereye" onChange={handleChange} placeholder="Örn: Ankara" className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white shadow-sm" />
+                  <input required name="nereye" value={formData.nereye} onChange={handleChange} placeholder="Örn: Ankara" className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white shadow-sm" />
                 </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Yükleme Tarihi</label>
-                  <input required type="date" name="yuklemeTarihi" onChange={handleChange} className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white shadow-sm" />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Mesafe (KM)</label>
+                    <input required type="number" name="mesafe" value={formData.mesafe} onChange={handleChange} placeholder="Örn: 450" className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white shadow-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Yükleme Tarihi</label>
+                    <input required type="date" name="yuklemeTarihi" value={formData.yuklemeTarihi} onChange={handleChange} className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white shadow-sm" />
+                  </div>
                 </div>
               </div>
 
-              {/* SAĞ SÜTUN: Adres (Yüksekliği Eşitledik) */}
-              <div className="flex flex-col">
-                <label className="block text-sm font-bold text-gray-700 mb-1">Tam Yükleme Adresi (Konum İçin)</label>
-                <textarea
-                  name="yuklemeAdresi"
-                  onChange={handleChange}
-                  placeholder="Örn: Organize Sanayi Bölgesi, 5. Cadde No:12 (Fabrika arka kapısı)"
-                  className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white shadow-sm flex-grow resize-none h-40 md:h-auto"
-                ></textarea>
-                <p className="text-xs text-gray-500 mt-2">ℹ️ İpucu: Buraya yazdığınız adres, sürücüler için otomatik harita bağlantısı oluşturur.</p>
+              {/* SAĞ SÜTUN: Adresler */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Yükleme Adresi</label>
+                  <textarea
+                    name="yuklemeAdresi"
+                    value={formData.yuklemeAdresi}
+                    onChange={handleChange}
+                    placeholder="Örn: Organize Sanayi, 1. Cadde..."
+                    className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white shadow-sm resize-none h-20"
+                  ></textarea>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Teslimat Adresi</label>
+                  <textarea
+                    name="teslimatAdresi"
+                    value={formData.teslimatAdresi}
+                    onChange={handleChange}
+                    placeholder="Örn: Ostim Sanayi, A Blok No:12..."
+                    className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white shadow-sm resize-none h-20"
+                  ></textarea>
+                </div>
               </div>
             </div>
           </div>
@@ -150,7 +170,7 @@ const IlanEkle = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">Yük Tipi</label>
-              <select name="yukTipi" onChange={handleChange} className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white" required>
+              <select name="yukTipi" value={formData.yukTipi} onChange={handleChange} className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white" required>
                 <option value="">Seçiniz...</option>
                 <option value="Paletli">Paletli</option>
                 <option value="Dökme">Dökme</option>
@@ -161,7 +181,7 @@ const IlanEkle = () => {
             </div>
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">Araç Tipi</label>
-              <select name="aracTipi" onChange={handleChange} className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white" required>
+              <select name="aracTipi" value={formData.aracTipi} onChange={handleChange} className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white" required>
                 <option value="">Seçiniz...</option>
                 <option value="Tır">Tır (13.60)</option>
                 <option value="Kırkayak">Kırkayak</option>
@@ -172,8 +192,7 @@ const IlanEkle = () => {
             </div>
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">Kasa Özelliği</label>
-              {/* DÜZELTİLEN KISIM: Value değerlerini düzelttik */}
-              <select name="kasaTipi" onChange={handleChange} className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white" required>
+              <select name="kasaTipi" value={formData.kasaTipi} onChange={handleChange} className="w-full p-3 border rounded outline-none focus:border-yellow-500 bg-white" required>
                 <option value="">Seçiniz...</option>
                 <option value="Standart">Standart / Tenteli</option>
                 <option value="Frigo">Frigo (Soğutuculu)</option>
@@ -188,18 +207,18 @@ const IlanEkle = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">Tonaj (Kg/Ton)</label>
-              <input required type="number" name="tonaj" onChange={handleChange} placeholder="Örn: 25" className="w-full p-3 border rounded outline-none focus:border-yellow-500" />
+              <input required type="number" name="tonaj" value={formData.tonaj} onChange={handleChange} placeholder="Örn: 25" className="w-full p-3 border rounded outline-none focus:border-yellow-500" />
             </div>
 
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">Ödeme Şekli</label>
               <div className="flex gap-4 p-3 border rounded bg-slate-50">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="odemeSekli" value="Peşin" onChange={handleChange} defaultChecked />
+                  <input type="radio" name="odemeSekli" value="Peşin" onChange={handleChange} checked={formData.odemeSekli === 'Peşin'} />
                   <span className="font-medium">Peşin</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="odemeSekli" value="Vadeli" onChange={handleChange} />
+                  <input type="radio" name="odemeSekli" value="Vadeli" onChange={handleChange} checked={formData.odemeSekli === 'Vadeli'} />
                   <span className="font-medium">Vadeli</span>
                 </label>
               </div>
@@ -208,7 +227,7 @@ const IlanEkle = () => {
 
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">Açıklama / Notlar</label>
-            <textarea required name="aciklama" rows="3" onChange={handleChange} placeholder="Yük hakkında özel notlar..." className="w-full p-3 border rounded outline-none focus:border-yellow-500"></textarea>
+            <textarea required name="aciklama" rows="3" value={formData.aciklama} onChange={handleChange} placeholder="Yük hakkında özel notlar..." className="w-full p-3 border rounded outline-none focus:border-yellow-500"></textarea>
           </div>
 
           <button type="submit" disabled={yukleniyor} className="w-full bg-slate-900 text-white font-bold py-4 rounded hover:bg-slate-800 transition shadow-lg">

@@ -5,7 +5,7 @@ import ScrollToTop from './components/ScrollToTop';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import YukIlanlari from './pages/YukIlanlari';
-import IlanEkle from './pages/IlanEkle'; 
+import IlanEkle from './pages/IlanEkle';
 import IlanDetay from './pages/IlanDetay';
 import GirisYap from './pages/GirisYap';
 import AracEkle from './pages/AracEkle';
@@ -24,6 +24,7 @@ import KullanimSartlari from './pages/KullanimSartlari';
 import KayitOl from './pages/KayitOl'
 import SifremiUnuttum from './pages/SifremiUnuttum';
 import IlanDuzenle from './pages/IlanDuzenle';
+import TopluIlanYukle from './pages/TopluIlanYukle'; // YENİ: Toplu Yükleme Sayfası
 
 
 
@@ -59,11 +60,12 @@ function App() {
             <Route path="/kullanim-sartlari" element={<KullanimSartlari />} />
             <Route path="/ilan-duzenle/:id" element={<IlanDuzenle />} />
             <Route path="/ilan/:id" element={<IlanDetay />} />
+            <Route path="/toplu-yukle" element={<TopluIlanYukle />} /> {/* YENİ ROTA */}
           </Routes>
         </main>
 
         <Footer />
-        
+
       </div>
     </Router>
   );

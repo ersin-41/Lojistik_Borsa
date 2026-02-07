@@ -5,6 +5,121 @@ import { doc, getDoc, collection, query, where, onSnapshot, updateDoc } from 'fi
 import { onAuthStateChanged } from 'firebase/auth';
 import TeklifModal from '../components/TeklifModal';
 
+
+// --- MALİYET HESAPLAYICI BİLEŞENİ ---
+const MaliyetHesaplayici = ({ varsayilanMesafe }) => {
+  const [mesafe, setMesafe] = useState(varsayilanMesafe || "");
+  const [yakitTuketimi, setYakitTuketimi] = useState(32); // Ortalama Tır (32L/100km)
+  const [yakitFiyati, setYakitFiyati] = useState(42); // Varsayılan Mazot
+  const [digerGiderler, setDigerGiderler] = useState(0); // Köprü, otoyol, harcırah, amortisman
+  const [karMarji, setKarMarji] = useState(20); // Yüzde
+
+  const yakitMaliyeti = (Number(mesafe) * Number(yakitTuketimi) / 100) * Number(yakitFiyati);
+  const toplamMaliyet = yakitMaliyeti + Number(digerGiderler);
+  const oneriFiyat = toplamMaliyet > 0 ? toplamMaliyet * (1 + Number(karMarji) / 100) : 0;
+
+  return (
+    <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-xl p-6 mb-8 shadow-2xl relative overflow-hidden">
+      <div className="absolute top-0 right-0 p-4 opacity-10">
+        <span className="text-9xl">🧮</span>
+      </div>
+
+      <h3 className="text-xl font-bold mb-6 flex items-center gap-2 relative z-10 text-yellow-500 border-b border-slate-700 pb-2">
+        ✨ Akıllı Maliyet & Teklif Hesaplayıcı
+      </h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+        {/* GİRDİLER */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-gray-400 font-bold block mb-1">Mesafe (KM)</label>
+              <input
+                type="number"
+                value={mesafe}
+                onChange={e => setMesafe(e.target.value)}
+                className="w-full bg-slate-700/50 border border-slate-600 rounded p-2 text-white font-mono focus:border-yellow-500 outline-none"
+                placeholder="Örn: 450"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 font-bold block mb-1">Yakıt (L/100km)</label>
+              <input
+                type="number"
+                value={yakitTuketimi}
+                onChange={e => setYakitTuketimi(e.target.value)}
+                className="w-full bg-slate-700/50 border border-slate-600 rounded p-2 text-white font-mono focus:border-yellow-500 outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-gray-400 font-bold block mb-1">Mazot Fiyatı (TL)</label>
+              <input
+                type="number"
+                value={yakitFiyati}
+                onChange={e => setYakitFiyati(e.target.value)}
+                className="w-full bg-slate-700/50 border border-slate-600 rounded p-2 text-white font-mono focus:border-yellow-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 font-bold block mb-1">Ek Giderler (TL)</label>
+              <input
+                type="number"
+                value={digerGiderler}
+                onChange={e => setDigerGiderler(e.target.value)}
+                className="w-full bg-slate-700/50 border border-slate-600 rounded p-2 text-white font-mono focus:border-yellow-500 outline-none"
+                placeholder="Köprü, yemek..."
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-400 font-bold block mb-1">Kâr Marjı (%)</label>
+            <input
+              type="range"
+              min="0" max="100" step="5"
+              value={karMarji}
+              onChange={e => setKarMarji(e.target.value)}
+              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-yellow-500"
+            />
+            <div className="text-right text-xs text-yellow-500 font-bold mt-1">
+              %{karMarji} Kâr
+            </div>
+          </div>
+        </div>
+
+        {/* SONUÇLAR */}
+        <div className="bg-slate-800/80 rounded-lg p-6 flex flex-col justify-center border border-slate-700">
+          <div className="mb-4">
+            <span className="text-gray-400 text-sm">Sadece Yakıt:</span>
+            <div className="text-xl font-mono text-white">
+              {yakitMaliyeti.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} <span className="text-sm text-gray-500">TL</span>
+            </div>
+          </div>
+
+          <div className="mb-4 border-b border-slate-600 pb-4">
+            <span className="text-gray-400 text-sm">Toplam Maliyet (Yakıt + Gider):</span>
+            <div className="text-2xl font-mono text-white font-bold">
+              {toplamMaliyet.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} <span className="text-sm text-gray-500">TL</span>
+            </div>
+          </div>
+
+          <div>
+            <span className="text-green-400 text-sm font-bold uppercase tracking-wider">Önerilen Teklif Tutarı:</span>
+            <div className="text-4xl font-mono text-green-400 font-bold mt-1">
+              {oneriFiyat.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} <span className="text-lg">TL</span>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">*KDV hariç tahmini hesaplamadır.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 const IlanDetay = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -93,9 +208,9 @@ const IlanDetay = () => {
     }
   };
 
-  const haritadaAc = () => {
-    if (ilan?.yuklemeAdresi) {
-      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ilan.yuklemeAdresi)}`, '_blank');
+  const haritadaAc = (adres) => {
+    if (adres) {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(adres)}`, '_blank');
     }
   };
 
@@ -163,32 +278,52 @@ const IlanDetay = () => {
               <span className="text-slate-900 font-bold text-lg">{ilan.odemeSekli || '-'}</span>
             </div>
             <div>
-              <span className="block text-gray-400 font-bold mb-1">Kasa Tipi</span>
-              <span className="text-slate-900 font-bold text-lg">{ilan.kasaTipi || 'Standart'}</span>
-            </div>
-            <div>
-              <span className="block text-gray-400 font-bold mb-1">İlan No</span>
-              <span className="text-slate-900 font-bold text-lg">#{ilan.id.substring(0, 6)}</span>
+              <span className="block text-gray-400 font-bold mb-1">Mesafe</span>
+              <span className="text-slate-900 font-bold text-lg">{ilan.mesafe ? `${ilan.mesafe} KM` : '-'}</span>
             </div>
           </div>
 
-          {/* HARİTA VE ADRES */}
-          {ilan.yuklemeAdresi && (
-            <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">📍</span>
+          {/* --- ADRES KARTLARI (YÜKLEME VE TESLİMAT) --- */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            {/* Yükleme Adresi */}
+            {ilan.yuklemeAdresi && (
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded rouded-l-none flex flex-col justify-between">
                 <div>
-                  <h4 className="font-bold text-blue-900">Yükleme Adresi</h4>
-                  <p className="text-blue-800 text-sm">{ilan.yuklemeAdresi}</p>
+                  <h4 className="font-bold text-blue-900 flex items-center gap-2 mb-2">
+                    📍 Yükleme Noktası
+                  </h4>
+                  <p className="text-blue-800 text-sm mb-4 leading-snug">{ilan.yuklemeAdresi}</p>
                 </div>
+                <button
+                  onClick={() => haritadaAc(ilan.yuklemeAdresi)}
+                  className="text-xs font-bold text-blue-600 bg-white border border-blue-200 py-2 px-3 rounded hover:bg-blue-600 hover:text-white transition w-max">
+                  Haritada Gör →
+                </button>
               </div>
-              <button onClick={haritadaAc} className="bg-white text-blue-600 border border-blue-200 px-4 py-2 rounded-lg font-bold hover:bg-blue-600 hover:text-white transition shadow-sm w-full md:w-auto">
-                Haritada Aç 🗺️
-              </button>
-            </div>
-          )}
+            )}
+
+            {/* Teslimat Adresi */}
+            {ilan.teslimatAdresi && (
+              <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded rouded-l-none flex flex-col justify-between">
+                <div>
+                  <h4 className="font-bold text-green-900 flex items-center gap-2 mb-2">
+                    🏁 Teslimat Noktası
+                  </h4>
+                  <p className="text-green-800 text-sm mb-4 leading-snug">{ilan.teslimatAdresi}</p>
+                </div>
+                <button
+                  onClick={() => haritadaAc(ilan.teslimatAdresi)}
+                  className="text-xs font-bold text-green-600 bg-white border border-green-200 py-2 px-3 rounded hover:bg-green-600 hover:text-white transition w-max">
+                  Haritada Gör →
+                </button>
+              </div>
+            )}
+          </div>
 
           <hr className="border-gray-100 my-8" />
+
+          {/* MALİYET HESAPLAYICI */}
+          <MaliyetHesaplayici varsayilanMesafe={ilan.mesafe} />
 
           {/* --- İLETİŞİM BUTONLARI --- */}
           <h3 className="font-bold text-slate-800 mb-4 text-lg">İlan Sahibi İle İletişim</h3>
