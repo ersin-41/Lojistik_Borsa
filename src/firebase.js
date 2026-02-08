@@ -21,5 +21,10 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
 // YENİ: Auth servisini ve Google Sağlayıcısını dışarı aktar
+// YENİ: Auth servisini ve Google Sağlayıcısını dışarı aktar
 export const auth = getAuth(app);
 export const provider = new GoogleAuthProvider();
+
+// YENİ: Storage servisini dışarı aktar (Teslimat İspatı için)
+import { getStorage } from "firebase/storage";
+export const storage = getStorage(app);

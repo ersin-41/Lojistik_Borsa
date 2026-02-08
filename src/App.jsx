@@ -24,7 +24,8 @@ import KullanimSartlari from './pages/KullanimSartlari';
 import KayitOl from './pages/KayitOl'
 import SifremiUnuttum from './pages/SifremiUnuttum';
 import IlanDuzenle from './pages/IlanDuzenle';
-import TopluIlanYukle from './pages/TopluIlanYukle'; // YENİ: Toplu Yükleme Sayfası
+import TopluIlanYukle from './pages/TopluIlanYukle';
+import TeslimatBildir from './pages/TeslimatBildir';
 
 
 
@@ -60,7 +61,8 @@ function App() {
             <Route path="/kullanim-sartlari" element={<KullanimSartlari />} />
             <Route path="/ilan-duzenle/:id" element={<IlanDuzenle />} />
             <Route path="/ilan/:id" element={<IlanDetay />} />
-            <Route path="/toplu-yukle" element={<TopluIlanYukle />} /> {/* YENİ ROTA */}
+            <Route path="/toplu-yukle" element={<TopluIlanYukle />} />
+            <Route path="/teslimat-bildir" element={<TeslimatBildir />} /> {/* YENİ ROTA */}
           </Routes>
         </main>
 

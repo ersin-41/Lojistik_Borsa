@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, query, where, getDocs, deleteDoc, doc, orderBy, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, deleteDoc, doc, orderBy, updateDoc, onSnapshot } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 
@@ -21,10 +21,9 @@ const Profilim = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
-                await tumVerileriGetir(currentUser.uid);
             } else {
                 navigate('/giris');
             }
@@ -33,42 +32,61 @@ const Profilim = () => {
         return () => unsubscribe();
     }, [navigate]);
 
-    const tumVerileriGetir = async (uid) => {
-        try {
-            // 1. Yük İlanları
-            const q1 = query(collection(db, "ilanlar"), where("ekleyen_id", "==", uid), orderBy("tarih", "desc"));
-            const s1 = await getDocs(q1);
-            setYukIlanlarim(s1.docs.map(d => ({ id: d.id, ...d.data(), tur: 'Yük İlanı' })));
+    // Gerçek Zamanlı Veri Dinleme
+    useEffect(() => {
+        if (!user) return;
 
-            // 2. Araç İlanları
-            const q2 = query(collection(db, "araclar"), where("ekleyen_id", "==", uid)); // orderBy index gerekebilir
-            const s2 = await getDocs(q2);
-            setAracIlanlarim(s2.docs.map(d => ({ id: d.id, ...d.data(), tur: 'Araç İlanı' })));
+        const unsubs = [];
 
-            // 3. Şoför İlanları (İşveren)
-            const q3 = query(collection(db, "sofor_ilanlari"), where("ekleyen_id", "==", uid));
-            const s3 = await getDocs(q3);
-            setSoforIlanlarim(s3.docs.map(d => ({ id: d.id, ...d.data(), tur: 'Şoför İlanı' })));
+        // 1. Yük İlanları
+        const q1 = query(collection(db, "ilanlar"), where("ekleyen_id", "==", user.uid));
+        unsubs.push(onSnapshot(q1, (s) => {
+            const data = s.docs.map(d => ({ id: d.id, ...d.data(), tur: 'Yük İlanı' }));
+            data.sort((a, b) => (b.tarih?.seconds || 0) - (a.tarih?.seconds || 0)); // Client-side sıralama
+            setYukIlanlarim(data);
+        }));
 
-            // 4. İş Arayan İlanları (Sürücü)
-            const q4 = query(collection(db, "surucu_is_arama"), where("ekleyen_id", "==", uid));
-            const s4 = await getDocs(q4);
-            setIsAramaIlanlarim(s4.docs.map(d => ({ id: d.id, ...d.data(), tur: 'İş Arama İlanı' })));
+        // 2. Araç İlanları
+        const q2 = query(collection(db, "araclar"), where("ekleyen_id", "==", user.uid));
+        unsubs.push(onSnapshot(q2, (s) => {
+            setAracIlanlarim(s.docs.map(d => ({ id: d.id, ...d.data(), tur: 'Araç İlanı' })));
+        }));
 
-            // 5. Gelen Teklifler (İlan Sahibi Olarak)
-            const q5 = query(collection(db, "teklifler"), where("ilanSahibiId", "==", uid), orderBy("tarih", "desc"));
-            const s5 = await getDocs(q5);
-            setGelenTeklifler(s5.docs.map(d => ({ id: d.id, ...d.data() })));
+        // 3. Şoför İlanları
+        const q3 = query(collection(db, "sofor_ilanlari"), where("ekleyen_id", "==", user.uid));
+        unsubs.push(onSnapshot(q3, (s) => {
+            setSoforIlanlarim(s.docs.map(d => ({ id: d.id, ...d.data(), tur: 'Şoför İlanı' })));
+        }));
 
-            // 6. Verdiğim Teklifler (Teklif Veren Olarak)
-            const q6 = query(collection(db, "teklifler"), where("teklifVerenId", "==", uid), orderBy("tarih", "desc"));
-            const s6 = await getDocs(q6);
-            setVerdigimTeklifler(s6.docs.map(d => ({ id: d.id, ...d.data() })));
+        // 4. İş Arayan İlanları
+        const q4 = query(collection(db, "surucu_is_arama"), where("ekleyen_id", "==", user.uid));
+        unsubs.push(onSnapshot(q4, (s) => {
+            setIsAramaIlanlarim(s.docs.map(d => ({ id: d.id, ...d.data(), tur: 'İş Arama İlanı' })));
+        }));
 
-        } catch (err) {
-            console.error("Veri çekme hatası:", err);
-        }
-    };
+        // 5. Gelen Teklifler
+        const q5 = query(collection(db, "teklifler"), where("ilanSahibiId", "==", user.uid));
+        unsubs.push(onSnapshot(q5, (s) => {
+            const data = s.docs.map(d => ({ id: d.id, ...d.data() }));
+            data.sort((a, b) => (b.tarih?.seconds || 0) - (a.tarih?.seconds || 0));
+            setGelenTeklifler(data);
+        }));
+
+        // 6. Verdiğim Teklifler
+        const q6 = query(collection(db, "teklifler"), where("teklifVerenId", "==", user.uid));
+        unsubs.push(onSnapshot(q6, (s) => {
+            const data = s.docs.map(d => ({ id: d.id, ...d.data() }));
+            data.sort((a, b) => (b.tarih?.seconds || 0) - (a.tarih?.seconds || 0));
+            setVerdigimTeklifler(data);
+        }));
+
+        return () => {
+            unsubs.forEach(u => u());
+        };
+    }, [user]);
+
+    // Eski manuel veri çekme fonksiyonu iptal edildi, yerine useEffect içinde onSnapshot kullanılıyor.
+    // tumVerileriGetir fonksiyonu silindi.
 
     // --- İŞLEMLER ---
 
@@ -115,6 +133,29 @@ const Profilim = () => {
         }
     };
 
+    const teklifYonet = async (teklif, yeniDurum) => {
+        if (!window.confirm(`Teklifi ${yeniDurum === 'onaylandi' ? 'ONAYLAMAK' : 'REDDETMEK'} istediğinize emin misiniz?`)) return;
+
+        try {
+            await updateDoc(doc(db, "teklifler", teklif.id), {
+                durum: yeniDurum
+            });
+
+            if (yeniDurum === 'onaylandi') {
+                // İlanı da pasife çek
+                await updateDoc(doc(db, "ilanlar", teklif.ilanId), {
+                    durum: 'pasif'
+                });
+                alert("Teklif onaylandı! İlan 'İşi Verdim' statüsüne alındı. ✅");
+            } else {
+                alert("Teklif reddedildi. ❌");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("İşlem başarısız.");
+        }
+    };
+
     const raporAlExcel = () => {
         let veri = [];
         let baslik = "Rapor";
@@ -123,11 +164,40 @@ const Profilim = () => {
         else if (aktifSekme === 'araclar') { veri = aracIlanlarim; baslik = "Arac_Ilanlarim"; }
         else if (aktifSekme === 'sofor_ilanlari') { veri = soforIlanlarim; baslik = "Sofor_Ilanlarim"; }
         else if (aktifSekme === 'teklifler') { veri = gelenTeklifler; baslik = "Gelen_Teklifler"; }
+        else if (aktifSekme === 'verdigim_teklifler') { veri = verdigimTeklifler; baslik = "Verdigim_Teklifler"; }
 
         if (veri.length === 0) return alert("İndirilecek veri yok.");
 
-        // Veriyi Excel formatına hazırla (istenmeyen alanları çıkarabiliriz)
-        const temizVeri = veri.map(({ ekleyen_id, ...rest }) => rest);
+        // Veriyi Excel formatına hazırla (İstenmeyen alanları çıkar, nesneleri düzleştir)
+        const temizVeri = veri.map(item => {
+            // 1. Gereksiz alanları çıkar
+            const { ekleyen_id, ilanSahibiId, teklifVerenId, ...rest } = item;
+
+            // 2. Yeni nesne oluştur
+            let row = { ...rest };
+
+            // 3. Tarih alanını okunabilir yap
+            if (row.tarih?.seconds) {
+                row.Tarih = new Date(row.tarih.seconds * 1000).toLocaleDateString();
+                delete row.tarih;
+            }
+
+            // 4. TESLİMAT BİLGİLERİNİ DÜZLEŞTİR (Flatten)
+            if (row.teslimat) {
+                row.Teslimat_Durumu = "Teslim Edildi";
+                row.Teslimat_IrsaliyeNo = row.teslimat.irsaliyeNo;
+                row.Teslimat_Tarihi = row.teslimat.tarih;
+                row.Teslimat_Saati = row.teslimat.saat;
+                row.Teslimat_Alan_Kisi = row.teslimat.teslimAlan;
+                row.Teslimat_TcNo = row.teslimat.tcNo;
+                // row.Teslimat_Evrak_Link = row.teslimat.evrakUrl; // Kullanıcı isteği üzerine kaldırıldı
+                delete row.teslimat; // Orijinal nesneyi sil
+            } else {
+                row.Teslimat_Durumu = "-";
+            }
+
+            return row;
+        });
 
         const worksheet = XLSX.utils.json_to_sheet(temizVeri);
         const workbook = XLSX.utils.book_new();
@@ -269,6 +339,9 @@ const Profilim = () => {
                 {/* 4. VERDİĞİM TEKLİFLER (YENİ) */}
                 {aktifSekme === 'verdigim_teklifler' && (
                     <div className="space-y-4">
+                        <div className="text-xs text-right text-gray-400">
+                            Canlı Veri Akışı
+                        </div>
                         {verdigimTeklifler.length === 0 && <p className="text-gray-500 text-center py-10">Henüz bir teklif vermediniz.</p>}
                         {verdigimTeklifler.map(teklif => (
                             <div key={teklif.id} className="bg-white p-4 rounded border shadow-sm relative overflow-hidden">
@@ -282,8 +355,23 @@ const Profilim = () => {
                                 <p className="text-xs text-gray-400 mt-2">{tarihFormatla(teklif.tarih)}</p>
 
                                 {teklif.durum === 'onaylandi' && (
-                                    <div className="mt-3 bg-green-50 text-green-800 p-2 rounded text-sm font-bold border border-green-200">
-                                        🎉 Teklifiniz kabul edildi! İlan sahibi ile iletişime geçebilirsiniz.
+                                    <div className="mt-3">
+                                        <div className="bg-green-50 text-green-800 p-2 rounded text-sm font-bold border border-green-200 mb-2">
+                                            🎉 Teklifiniz kabul edildi! İlan sahibi ile iletişime geçebilirsiniz.
+                                        </div>
+
+                                        {teklif.teslimat?.durum ? (
+                                            <div className="bg-blue-50 text-blue-800 p-2 rounded text-sm font-bold border border-blue-200">
+                                                ✅ Teslimat Bildirildi ({tarihFormatla(teklif.teslimat.yuklenmeZamani)})
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => navigate('/teslimat-bildir', { state: teklif })}
+                                                className="w-full bg-slate-800 text-yellow-500 py-2 rounded font-bold hover:bg-slate-700 transition"
+                                            >
+                                                🚚 Teslimat Bildir / Evrak Yükle
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -303,10 +391,47 @@ const Profilim = () => {
                                         <div className="text-sm text-gray-600">Teklif Veren: <b>{teklif.teklifVerenAd}</b></div>
                                         <div className="text-sm italic mt-1 text-gray-500">"{teklif.aciklama}"</div>
                                     </div>
-                                    <a href={`tel:${teklif.teklifVerenTel}`} className="bg-green-600 text-white h-10 px-4 rounded flex items-center gap-2 hover:bg-green-700 print:hidden">
-                                        📞 Ara
-                                    </a>
+                                    <div className="flex flex-col gap-2">
+                                        {teklif.durum === 'bekliyor' && (
+                                            <>
+                                                <button onClick={() => teklifYonet(teklif, 'onaylandi')} className="bg-green-600 text-white h-8 px-4 rounded text-sm font-bold hover:bg-green-700">
+                                                    Onayla ✅
+                                                </button>
+                                                <button onClick={() => teklifYonet(teklif, 'reddedildi')} className="bg-red-50 text-red-600 border border-red-200 h-8 px-4 rounded text-sm font-bold hover:bg-red-100">
+                                                    Reddet ❌
+                                                </button>
+                                            </>
+                                        )}
+                                        {/* Durum Göstergeleri */}
+                                        {teklif.durum === 'onaylandi' && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded text-center font-bold">Onaylandı</span>}
+                                        {teklif.durum === 'reddedildi' && <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded text-center font-bold">Reddedildi</span>}
+
+                                        <a href={`tel:${teklif.teklifVerenTel}`} className="bg-blue-600 text-white h-8 px-4 rounded flex items-center justify-center gap-2 hover:bg-blue-700 print:hidden text-sm font-bold">
+                                            📞 Ara
+                                        </a>
+                                    </div>
                                 </div>
+
+                                {/* TESLİMAT EVRAKI GÖRÜNTÜLEME ALANI */}
+                                {teklif.teslimat?.durum && (
+                                    <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded">
+                                        <h4 className="font-bold text-slate-800 mb-2 border-b pb-1">📄 Teslimat Detayları</h4>
+                                        <div className="grid grid-cols-2 gap-2 text-sm text-gray-700 mb-3">
+                                            <p><span className="font-semibold">İrsaliye No:</span> {teklif.teslimat.irsaliyeNo}</p>
+                                            <p><span className="font-semibold">Teslim Zamanı:</span> {teklif.teslimat.tarih} - {teklif.teslimat.saat}</p>
+                                            <p><span className="font-semibold">Teslim Alan:</span> {teklif.teslimat.teslimAlan}</p>
+                                            {teklif.teslimat.tcNo && <p><span className="font-semibold">TC No:</span> {teklif.teslimat.tcNo}</p>}
+                                        </div>
+                                        <a
+                                            href={teklif.teslimat.evrakUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-block bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition"
+                                        >
+                                            📥 Teslimat Evrakını Gör / İndir
+                                        </a>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
