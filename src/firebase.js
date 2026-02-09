@@ -5,8 +5,8 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 // BURAYI KENDİ BİLGİLERİNLE DOLDUR
 const firebaseConfig = {
-  apiKey: "AIzaSyA1dMOaAgwhqeBowLo6Msxejpet2EyHl0I",
-  authDomain: "lojistik-borsa.firebaseapp.com",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: "lojistik-borsa",
   storageBucket: "lojistik-borsa.firebasestorage.app",
   messagingSenderId: "883694447255",
