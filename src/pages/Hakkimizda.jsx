@@ -1,4 +1,5 @@
 import React from 'react';
+import SeoManager from '../components/SeoManager';
 
 const Hakkimizda = () => {
   return (
@@ -12,6 +13,15 @@ const Hakkimizda = () => {
         Dijital platformumuz, Türkiye'nin dört bir yanındaki binlerce tır, kamyon ve yük sahibini tek bir platformda buluşturarak
         lojistik süreçlerini optimize etmektedir.
       </p>
+      <div className="...">
+      {/* Return'ün hemen altına ekle: */}
+      <SeoManager 
+        title="Hakkımızda" 
+        description="Lojistik365 nedir? Dijital lojistik ağımız, vizyonumuz ve güvenilir taşımacılık çözümlerimiz hakkında bilgi alın." 
+      />
+      
+      {/* ... Sayfanın geri kalanı ... */}
+    </div>
     </div>
   );
 };

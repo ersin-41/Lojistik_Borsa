@@ -3,7 +3,7 @@ import { auth, provider, db } from '../firebase';
 import { signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useNavigate, Link } from 'react-router-dom';
-
+import SeoManager from '../components/SeoManager';
 
 
 const GirisYap = () => {
@@ -64,7 +64,7 @@ const GirisYap = () => {
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-slate-800">Lojistik<span className="text-yellow-500">365</span></h1>
           <p className="text-gray-500 mt-2">Tekrar hoş geldiniz!</p>
-          <SeoManager title="Giriş Yap" description="Lojistik365 üye girişi." />
+          <SeoManager title="Giriş Yap" description="Lojistik365 hesabınıza giriş yapın. Yük ekleyin, araç bulun ve fırsatları kaçırmayın." />
         </div>
 
         {hata && <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm font-bold border border-red-200">⚠️ {hata}</div>}

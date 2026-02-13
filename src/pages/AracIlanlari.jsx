@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import AracKarti from '../components/AracKarti';
+import SeoManager from '../components/SeoManager';
 
 const AracIlanlari = () => {
   const [araclar, setAraclar] = useState([]);
@@ -34,6 +35,15 @@ const AracIlanlari = () => {
         <a href="/arac-ekle" className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700 text-sm">
           + Araç Ekle
         </a>
+        <div className="...">
+      {/* Return'ün hemen altına ekle: */}
+      <SeoManager 
+        title="Boş Araç İlanları" 
+        description="81 ile anlık tır, kamyon, kamyonet ve panelvan ilanları. Yükünüzü taşıyacak boş aracı hemen bulun." 
+      />
+
+      {/* ... Sayfanın geri kalanı ... */}
+    </div>
       </div>
 
       {/* Filtre Alanı */}

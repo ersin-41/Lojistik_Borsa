@@ -4,7 +4,7 @@ import { db, auth } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom'; // Navigasyon eklendi
 import TeklifModal from '../components/TeklifModal';
-import SeoManager from './components/SeoManager';
+import SeoManager from '../components/SeoManager';
 
 function Ilanlar() {
   return (
