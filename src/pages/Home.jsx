@@ -1,17 +1,6 @@
-import SeoManager from './components/SeoManager'; 
-
-function Home() {
-  return (
-    <div>
-      <SeoManager 
-        title="Ana Sayfa" 
-        description="Türkiye'nin en hızlı dijital lojistik borsası. Yük ara, araç bul, komisyonsuz taşımacılık yap." />
-      </div>
-  )
-}
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import SeoManager from '../components/SeoManager'; // SEO Bileşenini import ettik
 
 const Home = () => {
   const navigate = useNavigate();
@@ -28,6 +17,13 @@ const Home = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
+      
+      {/* ✅ BİRLEŞTİRME BURADA YAPILDI: SEO AYARLARI */}
+      <SeoManager 
+        title="Ana Sayfa" 
+        description="Türkiye'nin en hızlı dijital lojistik borsası. Yük ara, araç bul, komisyonsuz taşımacılık yap." 
+      />
+
       {/* Hero Section (Üst Bölüm) */}
       <div className="bg-slate-900 py-20 px-4 text-center">
         <h1 className="text-3xl md:text-5xl font-bold text-white mb-6">
