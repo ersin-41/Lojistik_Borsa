@@ -2,6 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAnalytics } from "firebase/analytics";
 
 // BURAYI KENDİ BİLGİLERİNLE DOLDUR
 const firebaseConfig = {
@@ -19,6 +20,7 @@ const app = initializeApp(firebaseConfig);
 
 // Veritabanı servisini dışarı aktar
 export const db = getFirestore(app);
+export const analytics = getAnalytics(app);
 
 // YENİ: Auth servisini ve Google Sağlayıcısını dışarı aktar
 // YENİ: Auth servisini ve Google Sağlayıcısını dışarı aktar
