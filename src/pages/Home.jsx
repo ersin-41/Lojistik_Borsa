@@ -1,3 +1,15 @@
+import SeoManager from './components/SeoManager'; 
+
+function Home() {
+  return (
+    <div>
+      <SeoManager 
+        title="Ana Sayfa" 
+        description="Türkiye'nin en hızlı dijital lojistik borsası. Yük ara, araç bul, komisyonsuz taşımacılık yap." />
+      </div>
+  )
+}
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 

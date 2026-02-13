@@ -4,6 +4,17 @@ import { db, auth } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom'; // Navigasyon eklendi
 import TeklifModal from '../components/TeklifModal';
+import SeoManager from './components/SeoManager';
+
+function Ilanlar() {
+  return (
+    <div>
+      <SeoManager 
+        title="Yük İlanları" 
+        description="Güncel nakliye ve yük ilanları. 81 ile anlık tır, kamyon ve kamyonet yükleri Lojistik365'te." />
+      </div>
+  )
+}
 
 const YukIlanlari = () => {
   const [ilanlar, setIlanlar] = useState([]);
