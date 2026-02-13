@@ -1,9 +1,47 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Geliştirme aşaması için genel izin (Daha sonra kısıtlanmalı)
+
+    // 1. KULLANICI PROFİLLERİ
+    // Profilin ID'si ile giren kişinin ID'si aynı mı?
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // 2. YÜK İLANLARI (ekleyen_id kontrolü)
+    match /ilanlar/{document} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      // Güncelleme ve Silme için: Belgedeki 'ekleyen_id' ile giren kişinin ID'si aynı olmalı.
+      allow update, delete: if request.auth != null && resource.data.ekleyen_id == request.auth.uid;
+    }
+
+    // 3. ARAÇ İLANLARI
+    match /araclar/{document} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.ekleyen_id == request.auth.uid;
+    }
+
+    // 4. ŞOFÖR İLANLARI
+    match /sofor_ilanlari/{document} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.ekleyen_id == request.auth.uid;
+    }
+
+    // 5. SÜRÜCÜ İŞ ARAMA
+    match /surucu_is_arama/{document} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.ekleyen_id == request.auth.uid;
+    }
+    
+    // (Opsiyonel) Eğer ileride başka bir koleksiyon açarsan geçici güvenlik:
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read: if true;
+      allow write: if request.auth != null;
     }
   }
 }
